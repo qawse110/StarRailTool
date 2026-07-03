@@ -108,30 +108,3 @@ class CharactersViewModelTest {
         version = 1
     )
 }
-
-/**
- * 内存实现 [CharacterRepository]，仅暴露测试需要的方法。
- * VM 测试不需要 Room/网络，只用 [MutableStateFlow] 即可。
- */
-private class FakeRepository(
-    chars: List<Character>
-) : CharacterRepository {
-    private val charFlow = MutableStateFlow(chars)
-    private val coneFlow = MutableStateFlow<List<LightCone>>(emptyList())
-    private val relicFlow = MutableStateFlow<List<RelicSet>>(emptyList())
-    private val enemyFlow = MutableStateFlow<List<Enemy>>(emptyList())
-    private val scenarioFlow = MutableStateFlow<List<Scenario>>(emptyList())
-
-    override fun observeAllCharacters(): Flow<List<Character>> = charFlow.asStateFlow()
-    override suspend fun getCharacter(id: String): Character? =
-        charFlow.value.firstOrNull { it.id == id }
-
-    override fun observeAllLightCones(): Flow<List<LightCone>> = coneFlow.asStateFlow()
-    override suspend fun getLightCone(id: String): LightCone? =
-        coneFlow.value.firstOrNull { it.id == id }
-
-    override fun observeAllRelicSets(): Flow<List<RelicSet>> = relicFlow.asStateFlow()
-    override fun observeAllEnemies(): Flow<List<Enemy>> = enemyFlow.asStateFlow()
-    override fun observeAllScenarios(): Flow<List<Scenario>> = scenarioFlow.asStateFlow()
-    override suspend fun getEidolonsFor(characterId: String): List<Eidolon> = emptyList()
-}
