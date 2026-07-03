@@ -29,7 +29,11 @@ fun AppNavGraph(
             modifier = modifier
         ) {
             composable(Route.Assessment.path) { AssessmentScreen() }
-            composable(Route.TeamBuilder.path) { TeamBuilderScreen() }
+            composable(Route.TeamBuilder.path) {
+                TeamBuilderScreen(
+                    onShowBattleLog = { navController.navigate(Route.BattleLog.path) }
+                )
+            }
             composable(Route.Characters.path) {
                 CharactersScreen(onCharacterClick = { id ->
                     navController.navigate(Route.CharacterDetail(id).path)
@@ -37,7 +41,9 @@ fun AppNavGraph(
             }
             composable(Route.Scenario.path) { ScenarioScreen() }
             composable(Route.Build.path) { BuildScreen() }
-            composable(Route.BattleLog.path) { BattleLogScreen() }
+            composable(Route.BattleLog.path) {
+                BattleLogScreen(onBack = { navController.popBackStack() })
+            }
             composable(Route.RelicScorer.path) { RelicScorerScreen() }
             composable(Route.Scraper.path) { ScraperScreen() }
             composable(
