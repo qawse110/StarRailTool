@@ -235,4 +235,104 @@ class Mar7thToSeedTransformerTest {
         // 未知元素 → 降级 PHYSICAL
         assertThat(result.characters.first().element).isEqualTo(Element.PHYSICAL)
     }
+
+    // ===== 关键词推断 (KeywordMatcher) 测试 =====
+    // 直接测 KeywordMatcher（绕过 JsonObject.toEidolonEffect 的 receiver 复杂性）
+
+    @Test fun `keyword matcher CRIT rate in English`() {
+        val eff = KeywordMatcher.infer("Increases CRIT Rate by 12%.", 0.12)
+        assertThat(eff).isEqualTo(KeywordEffect.StatBoost(
+            com.mystarrail.tool.data.model.StatType.CRIT_RATE
+        ))
+    }
+
+    @Test fun `keyword matcher CRIT rate in Chinese`() {
+        val eff = KeywordMatcher.infer("使装备者的暴击率提高12%。", 0.12)
+        assertThat(eff).isEqualTo(KeywordEffect.StatBoost(
+            com.mystarrail.tool.data.model.StatType.CRIT_RATE
+        ))
+    }
+
+    @Test fun `keyword matcher ATK in Chinese`() {
+        val eff = KeywordMatcher.infer("攻击力提高20%。", 0.20)
+        assertThat(eff).isEqualTo(KeywordEffect.StatBoost(
+            com.mystarrail.tool.data.model.StatType.ATK
+        ))
+    }
+
+    @Test fun `keyword matcher DMG in Chinese maps to DamageBonus`() {
+        val eff = KeywordMatcher.infer("终结技伤害提高25%", 0.25)
+        assertThat(eff).isEqualTo(KeywordEffect.DamageBonus)
+    }
+
+    @Test fun `keyword matcher HP in Chinese`() {
+        val eff = KeywordMatcher.infer("生命值提升10%", 0.10)
+        assertThat(eff).isEqualTo(KeywordEffect.StatBoost(
+            com.mystarrail.tool.data.model.StatType.HP
+        ))
+    }
+
+    @Test fun `keyword matcher CRIT DMG takes priority over DMG`() {
+        // "暴击伤害" 含 "伤害" 子串，但 CRIT DMG 规则在前，应优先匹配 CRIT_DMG
+        val eff = KeywordMatcher.infer("暴击伤害提高20%", 0.20)
+        assertThat(eff).isEqualTo(KeywordEffect.StatBoost(
+            com.mystarrail.tool.data.model.StatType.CRIT_DMG
+        ))
+    }
+
+    @Test fun `keyword matcher Max HP takes priority over HP`() {
+        val eff = KeywordMatcher.infer("最大生命值提升10%", 0.10)
+        assertThat(eff).isEqualTo(KeywordEffect.StatBoost(
+            com.mystarrail.tool.data.model.StatType.HP
+        ))
+    }
+
+    @Test fun `keyword matcher returns null for unrecognized desc`() {
+        val eff = KeywordMatcher.infer("完全无关键词的中文描述文本。", 1.0)
+        assertThat(eff).isNull()
+    }
+
+    // ===== 端到端：通过 JsonObject.toEidolonEffect 走 cn 路径 =====
+
+    @Test fun `end to end eidolon with Chinese CRIT rate desc`() {
+        val ranksCn = """
+            {
+              "100101": { "id": "100101", "name": "再相会", "rank": 1,
+                          "desc": "使希儿的暴击率提高12%。",
+                          "params": [[0.12]] }
+            }
+        """.trimIndent()
+        val files = mapOf(
+            RemoteSeedSource.File.CHARACTERS to parse("""{"1001":{"id":"1001","name":"希儿","rarity":5,"path":"Hunt","element":"Quantum","skills":[],"ranks":["100101"]}}"""),
+            RemoteSeedSource.File.CHARACTER_RANKS to parse(ranksCn)
+        )
+        val result = Mar7thToSeedTransformer.transform(files)
+        assertThat(result.eidolons).hasSize(1)
+        val e = result.eidolons.first()
+        assertThat(e.effect).isInstanceOf(
+            com.mystarrail.tool.data.model.EidolonEffect.StatBoost::class.java
+        )
+        val sb = e.effect as com.mystarrail.tool.data.model.EidolonEffect.StatBoost
+        assertThat(sb.stat).isEqualTo(com.mystarrail.tool.data.model.StatType.CRIT_RATE)
+        assertThat(sb.value).isEqualTo(0.12)
+    }
+
+    @Test fun `end to end eidolon with Chinese DMG desc maps to DamageBonus`() {
+        val ranksCn = """
+            {
+              "100101": { "id": "100101", "name": "破晓", "rank": 3,
+                          "desc": "终结技伤害提高20%。",
+                          "params": [[0.20]] }
+            }
+        """.trimIndent()
+        val files = mapOf(
+            RemoteSeedSource.File.CHARACTERS to parse("""{"1001":{"id":"1001","name":"希儿","rarity":5,"path":"Hunt","element":"Quantum","skills":[],"ranks":["100101"]}}"""),
+            RemoteSeedSource.File.CHARACTER_RANKS to parse(ranksCn)
+        )
+        val result = Mar7thToSeedTransformer.transform(files)
+        val e = result.eidolons.first()
+        assertThat(e.effect).isInstanceOf(
+            com.mystarrail.tool.data.model.EidolonEffect.DamageBonus::class.java
+        )
+    }
 }

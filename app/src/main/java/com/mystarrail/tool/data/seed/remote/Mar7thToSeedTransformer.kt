@@ -33,7 +33,7 @@ import kotlinx.serialization.json.jsonPrimitive
  *  - 命途 12 选 7；StarRailRes 12 命途覆盖了我们 7 命途，做了别名映射
  *  - 技能倍率取满级 params 第一个；AOE 判定粗略
  *  - 遗器效果靠 properties.effects 数组推断，不准
- *  - 星魂效果仅 desc 文本 + 简单正则
+ *  - 星魂/光锥 desc 用 KeywordMatcher 中英文双语关键词表推断效果类型
  */
 object Mar7thToSeedTransformer {
 
@@ -305,24 +305,9 @@ object Mar7thToSeedTransformer {
         val desc = this.str("desc").orEmpty()
         val firstValue = this["params"]?.jsonArray?.firstOrNull()?.jsonArray
             ?.firstOrNull()?.let { runCatching { it.jsonPrimitive.double }.getOrNull() } ?: 0.0
-        return when {
-            desc.contains("CRIT Rate", ignoreCase = true) -> PassiveEffect.StatBoost(
-                stat = StatType.CRIT_RATE, value = firstValue
-            )
-            desc.contains("CRIT DMG", ignoreCase = true) -> PassiveEffect.StatBoost(
-                stat = StatType.CRIT_DMG, value = firstValue
-            )
-            desc.contains("ATK", ignoreCase = true) -> PassiveEffect.StatBoost(
-                stat = StatType.ATK, value = firstValue
-            )
-            desc.contains("HP", ignoreCase = true) -> PassiveEffect.StatBoost(
-                stat = StatType.HP, value = firstValue
-            )
-            desc.contains("DMG", ignoreCase = true) -> PassiveEffect.DamageBonus(
-                multiplier = firstValue, condition = DmgCondition.ALWAYS
-            )
-            else -> PassiveEffect.StatBoost(stat = StatType.ATK, value = firstValue)
-        }
+        val inferred = KeywordMatcher.infer(desc, firstValue)
+            ?: return PassiveEffect.StatBoost(stat = StatType.ATK, value = firstValue)
+        return inferred.toPassiveEffectFromKeyword(firstValue)
     }
 
     private fun JsonElement.toPassiveEffectFromRelic(): PassiveEffect {
@@ -349,25 +334,18 @@ object Mar7thToSeedTransformer {
         val desc = this.str("desc").orEmpty()
         val firstParam = this["params"]?.jsonArray?.firstOrNull()?.jsonArray
             ?.firstOrNull()?.let { runCatching { it.jsonPrimitive.double }.getOrNull() }
-        return when {
-            desc.contains("CRIT Rate", ignoreCase = true) && firstParam != null ->
-                EidolonEffect.StatBoost(stat = StatType.CRIT_RATE, value = firstParam)
-            desc.contains("CRIT DMG", ignoreCase = true) && firstParam != null ->
-                EidolonEffect.StatBoost(stat = StatType.CRIT_DMG, value = firstParam)
-            desc.contains("ATK", ignoreCase = true) && firstParam != null ->
-                EidolonEffect.StatBoost(
-                    stat = StatType.ATK, value = firstParam,
-                    target = if (desc.contains("Ally", ignoreCase = true)) Target.ALLY else Target.SELF
-                )
-            desc.contains("DMG", ignoreCase = true) && firstParam != null ->
-                EidolonEffect.DamageBonus(multiplier = firstParam, condition = DmgCondition.ALWAYS)
-            firstParam != null -> EidolonEffect.NewMechanic(
-                mechanic = Tag.IMPULSE, param = firstParam, note = desc.take(80)
-            )
-            else -> EidolonEffect.NewMechanic(
+
+        if (firstParam == null) {
+            return EidolonEffect.NewMechanic(
                 mechanic = Tag.IMPULSE, param = 1.0, note = desc.take(80)
             )
         }
+
+        val inferred = KeywordMatcher.infer(desc, firstParam)
+            ?: return EidolonEffect.NewMechanic(
+                mechanic = Tag.IMPULSE, param = firstParam, note = desc.take(80)
+            )
+        return inferred.toEidolonEffectFromKeyword(firstParam, desc)
     }
 
     private fun JsonObject.extractMaxParam(): Double? {
@@ -384,4 +362,88 @@ object Mar7thToSeedTransformer {
 
     private fun JsonObject.int(key: String): Int? =
         runCatching { this[key]?.jsonPrimitive?.content?.toInt() }.getOrNull()
+}
+
+// =====================================================================
+// KeywordMatcher — 中英文 desc 关键词 → 效果类型 推断器
+// =====================================================================
+
+/**
+ * 关键词匹配结果（StatBoost / DamageBonus）。
+ * 提到顶级（不在 object 内）以便 transformer 的 private 扩展函数调用。
+ */
+sealed interface KeywordEffect {
+    data class StatBoost(val stat: StatType) : KeywordEffect
+    data object DamageBonus : KeywordEffect
+}
+
+/** 顶级扩展：Effect → PassiveEffect */
+private fun KeywordEffect.toPassiveEffectFromKeyword(value: Double): PassiveEffect = when (this) {
+    is KeywordEffect.StatBoost -> PassiveEffect.StatBoost(stat = stat, value = value)
+    is KeywordEffect.DamageBonus -> PassiveEffect.DamageBonus(
+        multiplier = value, condition = DmgCondition.ALWAYS
+    )
+}
+
+/** 顶级扩展：Effect → EidolonEffect（ATK + Ally/队友 → target=ALLY） */
+private fun KeywordEffect.toEidolonEffectFromKeyword(
+    value: Double,
+    desc: String
+): EidolonEffect = when (this) {
+    is KeywordEffect.StatBoost -> {
+        val target = if (stat == StatType.ATK &&
+            (desc.contains("Ally", ignoreCase = true) ||
+             desc.contains("队友") || desc.contains("我方"))
+        ) Target.ALLY else Target.SELF
+        EidolonEffect.StatBoost(stat = stat, value = value, target = target)
+    }
+    is KeywordEffect.DamageBonus -> EidolonEffect.DamageBonus(
+        multiplier = value, condition = DmgCondition.ALWAYS
+    )
+}
+
+/**
+ * 关键词表（en + cn）。按"先具体后泛化"顺序排列：
+ *  - CRIT Rate / CRIT DMG 在 ATK 之前（避免 "DMG" 吃掉 "CRIT DMG"）
+ *  - DMG 单独优先（避免被 ATK 吃掉）
+ *  - Max HP 在 HP 之前（更具体）
+ */
+internal object KeywordMatcher {
+
+    private val RULES: List<Pair<List<String>, KeywordEffect>> = listOf(
+        // CRIT
+        listOf("CRIT Rate", "暴击率") to KeywordEffect.StatBoost(StatType.CRIT_RATE),
+        listOf("CRIT DMG", "暴击伤害", "暴击损伤") to KeywordEffect.StatBoost(StatType.CRIT_DMG),
+        // DMG 单独优先
+        listOf("DMG", "伤害", "增伤") to KeywordEffect.DamageBonus,
+        // ATK
+        listOf("ATK", "攻击力", "攻击") to KeywordEffect.StatBoost(StatType.ATK),
+        // HP / DEF / SPD
+        listOf("Max HP", "最大生命值", "生命值上限", "生命上限") to KeywordEffect.StatBoost(StatType.HP),
+        listOf("HP", "生命值") to KeywordEffect.StatBoost(StatType.HP),
+        listOf("DEF", "防御力", "防御") to KeywordEffect.StatBoost(StatType.DEF),
+        listOf("SPD", "速度") to KeywordEffect.StatBoost(StatType.SPD),
+        // 特殊属性
+        listOf("Effect Hit Rate", "效果命中") to KeywordEffect.StatBoost(StatType.EHR),
+        listOf("Break Effect", "击破特攻") to KeywordEffect.StatBoost(StatType.BRK_EFF),
+        listOf("Effect RES", "效果抵抗") to KeywordEffect.StatBoost(StatType.EFFECT_RES),
+        // 治疗
+        listOf("Heal", "治疗") to KeywordEffect.StatBoost(StatType.HP)
+    )
+
+    /**
+     * 在 [desc] 中按规则顺序查找第一个匹配的关键词，返回效果类型。
+     * [value] 参数保留给将来"看值大小选 DamageBonus vs StatBoost"等扩展用。
+     */
+    fun infer(desc: String, value: Double): KeywordEffect? {
+        if (desc.isEmpty()) return null
+        for ((keywords, effect) in RULES) {
+            for (kw in keywords) {
+                if (desc.contains(kw, ignoreCase = true)) {
+                    return effect
+                }
+            }
+        }
+        return null
+    }
 }
