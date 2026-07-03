@@ -5,6 +5,7 @@ import com.mystarrail.tool.data.local.AppDatabase
 import com.mystarrail.tool.data.repository.CharacterRepository
 import com.mystarrail.tool.data.repository.RoomCharacterRepository
 import com.mystarrail.tool.data.seed.SeedImporter
+import com.mystarrail.tool.data.seed.remote.RemoteSeedSource
 import com.mystarrail.tool.engine.simulator.ScoringEngine
 import com.mystarrail.tool.engine.simulator.damage.DamageCalculator
 import com.mystarrail.tool.engine.simulator.sim.DiscreteEventSimulator
@@ -14,6 +15,7 @@ import com.mystarrail.tool.engine.simulator.tables.FormulaTables
 class ServiceLocator(appContext: Context) {
     val database: AppDatabase by lazy { AppDatabase.get(appContext) }
     val seedImporter: SeedImporter by lazy { SeedImporter(appContext, database) }
+    val remoteSeedSource: RemoteSeedSource by lazy { RemoteSeedSource() }
     val repository: CharacterRepository by lazy { RoomCharacterRepository(database) }
 
     val damageCalc: DamageCalculator by lazy { DamageCalculator(FormulaTables()) }

@@ -21,8 +21,9 @@ fun ScraperScreen() {
     val app = context.applicationContext as StarRailApp
     val viewModel: ScraperViewModel = viewModel(
         factory = ScraperViewModel.factory(
-            app.services.repository,
-            reimportCallback = { app.services.seedImporter.importFromAssets() }
+            repository = app.services.repository,
+            reimportCallback = { app.services.seedImporter.importFromAssets() },
+            fetchFromMar7thCallback = { app.fetchAndImportRemote() }
         )
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -58,6 +59,22 @@ fun ScraperScreen() {
                         onClick = { viewModel.reimportSeed() },
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("🔄 重新导入 seed JSON") }
+                    Spacer(Modifier.height(4.dp))
+                    Button(
+                        onClick = { viewModel.updateFromMar7th() },
+                        enabled = !state.isUpdatingFromMar7th,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (state.isUpdatingFromMar7th) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text("🌐 从 Mar-7th 远程更新")
+                        }
+                    }
                 }
             }
         }

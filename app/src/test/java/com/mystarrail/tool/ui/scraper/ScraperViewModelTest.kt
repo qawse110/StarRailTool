@@ -31,7 +31,7 @@ class ScraperViewModelTest {
         val repo = FakeRepository(chars = listOf(
             sampleChar("a"), sampleChar("b"), sampleChar("c")
         ))
-        val vm = ScraperViewModel(repo, reimportCallback = { /* noop */ })
+        val vm = ScraperViewModel(repo, reimportCallback = { /* noop */ }, fetchFromMar7thCallback = { error("not used") })
         advanceUntilIdle()
         val s = vm.state.value
         assertThat(s.characterCount).isEqualTo(3)
@@ -40,7 +40,7 @@ class ScraperViewModelTest {
 
     @Test fun `setUrl updates state`() = runTest {
         val repo = FakeRepository()
-        val vm = ScraperViewModel(repo, reimportCallback = {})
+        val vm = ScraperViewModel(repo, reimportCallback = {}, fetchFromMar7thCallback = { error("not used") })
         advanceUntilIdle()
         vm.setUrl("https://example.com")
         assertThat(vm.state.value.url).isEqualTo("https://example.com")
@@ -48,7 +48,7 @@ class ScraperViewModelTest {
 
     @Test fun `fetch with empty url sets error`() = runTest {
         val repo = FakeRepository()
-        val vm = ScraperViewModel(repo, reimportCallback = {})
+        val vm = ScraperViewModel(repo, reimportCallback = {}, fetchFromMar7thCallback = { error("not used") })
         advanceUntilIdle()
         vm.setUrl("")
         vm.fetch()
@@ -59,7 +59,7 @@ class ScraperViewModelTest {
     @Test fun `reimportSeed invokes callback and shows success`() = runTest {
         var invoked = false
         val repo = FakeRepository()
-        val vm = ScraperViewModel(repo, reimportCallback = { invoked = true })
+        val vm = ScraperViewModel(repo, reimportCallback = { invoked = true }, fetchFromMar7thCallback = { error("not used") })
         advanceUntilIdle()
         vm.reimportSeed()
         advanceUntilIdle()

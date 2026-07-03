@@ -22,14 +22,18 @@ data class ScraperUiState(
     val isLoadingStatus: Boolean = true,
     val url: String = "",
     val isFetching: Boolean = false,
+    val isUpdatingFromMar7th: Boolean = false,
+    val mar7thLastUpdate: Long? = null,
     val lastResult: String? = null,
     val lastError: String? = null
 )
 
 class ScraperViewModel(
     private val repository: CharacterRepository,
-    /** 重新导入 seed 的回调 — 通常是 `seedImporter::importFromAssets`。 */
-    private val reimportCallback: suspend () -> Unit
+    /** 重新导入 seed（assets 路径）的回调 */
+    private val reimportCallback: suspend () -> Unit,
+    /** 从 Mar-7th 远程拉取并导入的回调 */
+    private val fetchFromMar7thCallback: suspend () -> com.mystarrail.tool.data.seed.SeedImporter.ImportResult
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ScraperUiState())
@@ -116,14 +120,47 @@ class ScraperViewModel(
         }
     }
 
+    /**
+     * 从 Mar-7th/StarRailRes 远程拉取并导入。覆盖 4 个核心表。
+     * 注：导入是 REPLACE 模式，重复拉取是幂等的。
+     */
+    fun updateFromMar7th() {
+        if (_state.value.isUpdatingFromMar7th) return
+        _state.value = _state.value.copy(isUpdatingFromMar7th = true, lastError = null, lastResult = null)
+        viewModelScope.launch {
+            val result = try {
+                fetchFromMar7thCallback()
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isUpdatingFromMar7th = false,
+                    lastError = "远程拉取失败: ${e.message}"
+                )
+                return@launch
+            }
+            refreshStatus()
+            _state.value = when (result) {
+                is com.mystarrail.tool.data.seed.SeedImporter.ImportResult.Success -> _state.value.copy(
+                    isUpdatingFromMar7th = false,
+                    mar7thLastUpdate = System.currentTimeMillis(),
+                    lastResult = "✅ 已从 Mar-7th 更新: ${result.characters} 角色 / ${result.lightCones} 光锥 / ${result.relicSets} 遗器 / ${result.eidolons} 星魂"
+                )
+                is com.mystarrail.tool.data.seed.SeedImporter.ImportResult.Failed -> _state.value.copy(
+                    isUpdatingFromMar7th = false,
+                    lastError = "远程更新失败: ${result.reason}"
+                )
+            }
+        }
+    }
+
     companion object {
         fun factory(
             repository: CharacterRepository,
-            reimportCallback: suspend () -> Unit
+            reimportCallback: suspend () -> Unit,
+            fetchFromMar7thCallback: suspend () -> com.mystarrail.tool.data.seed.SeedImporter.ImportResult
         ) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ScraperViewModel(repository, reimportCallback) as T
+                ScraperViewModel(repository, reimportCallback, fetchFromMar7thCallback) as T
         }
     }
 }

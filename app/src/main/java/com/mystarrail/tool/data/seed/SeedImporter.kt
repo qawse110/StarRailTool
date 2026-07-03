@@ -24,34 +24,47 @@ class SeedImporter(
                 Log.e(TAG, "Cannot read asset: $assetPath")
                 return@withContext ImportResult.Failed("Cannot read $assetPath")
             }
-
             when (val parsed = SeedParser.parse(rawJson)) {
                 is SeedParser.ParseResult.Failed -> {
                     Log.e(TAG, "Seed parse failed: ${parsed.reason}", parsed.cause)
                     ImportResult.Failed(parsed.reason)
                 }
-                is SeedParser.ParseResult.Success -> try {
-                    db.withTransaction {
-                        db.characterDao().insertAll(parsed.characters.map(CharacterEntity::fromModel))
-                        db.lightConeDao().insertAll(parsed.lightCones.map(LightConeEntity::fromModel))
-                        db.relicSetDao().insertAll(parsed.relicSets.map(RelicSetEntity::fromModel))
-                        db.enemyDao().insertAll(parsed.enemies.map(EnemyEntity::fromModel))
-                        db.scenarioDao().insertAll(parsed.scenarios.map(ScenarioEntity::fromModel))
-                        db.eidolonDao().insertAll(parsed.eidolons.map(EidolonEntity::fromModel))
-                    }
-                    Log.i(TAG, "Seed imported: ${parsed.characters.size} chars / ${parsed.lightCones.size} cones / ${parsed.relicSets.size} relics / ${parsed.enemies.size} enemies / ${parsed.scenarios.size} scenarios / ${parsed.eidolons.size} eidolons")
-                    ImportResult.Success(
-                        characters = parsed.characters.size,
-                        lightCones = parsed.lightCones.size,
-                        relicSets = parsed.relicSets.size,
-                        enemies = parsed.enemies.size,
-                        scenarios = parsed.scenarios.size,
-                        eidolons = parsed.eidolons.size
-                    )
-                } catch (e: Exception) {
-                    Log.e(TAG, "DB write failed", e)
-                    ImportResult.Failed("DB error: ${e.message}")
+                is SeedParser.ParseResult.Success -> importSeed(parsed)
+            }
+        }
+
+    /**
+     * 写入一个已解析的 [SeedParser.ParseResult.Success] 到 DB。
+     *
+     * 来源可以是：
+     *  - assets JSON（[importFromAssets] 内部用）
+     *  - 远程 Mar-7th/StarRailRes（[com.mystarrail.tool.data.seed.remote.Mar7thToSeedTransformer]）
+     *
+     * 用 [OnConflictStrategy.REPLACE] 写入，所以"重复导入"是幂等的。
+     */
+    suspend fun importSeed(parsed: SeedParser.ParseResult.Success): ImportResult =
+        withContext(Dispatchers.IO) {
+            try {
+                db.withTransaction {
+                    db.characterDao().insertAll(parsed.characters.map(CharacterEntity::fromModel))
+                    db.lightConeDao().insertAll(parsed.lightCones.map(LightConeEntity::fromModel))
+                    db.relicSetDao().insertAll(parsed.relicSets.map(RelicSetEntity::fromModel))
+                    db.enemyDao().insertAll(parsed.enemies.map(EnemyEntity::fromModel))
+                    db.scenarioDao().insertAll(parsed.scenarios.map(ScenarioEntity::fromModel))
+                    db.eidolonDao().insertAll(parsed.eidolons.map(EidolonEntity::fromModel))
                 }
+                Log.i(TAG, "Seed imported: ${parsed.characters.size} chars / ${parsed.lightCones.size} cones / ${parsed.relicSets.size} relics / ${parsed.enemies.size} enemies / ${parsed.scenarios.size} scenarios / ${parsed.eidolons.size} eidolons")
+                ImportResult.Success(
+                    characters = parsed.characters.size,
+                    lightCones = parsed.lightCones.size,
+                    relicSets = parsed.relicSets.size,
+                    enemies = parsed.enemies.size,
+                    scenarios = parsed.scenarios.size,
+                    eidolons = parsed.eidolons.size
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "DB write failed", e)
+                ImportResult.Failed("DB error: ${e.message}")
             }
         }
 
