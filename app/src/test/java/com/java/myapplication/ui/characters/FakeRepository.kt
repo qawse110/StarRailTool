@@ -18,13 +18,16 @@ import kotlinx.coroutines.flow.map
  */
 class FakeRepository(
     chars: List<Character> = emptyList(),
-    cones: List<LightCone> = emptyList()
+    cones: List<LightCone> = emptyList(),
+    relics: List<RelicSet> = emptyList(),
+    enemies: List<Enemy> = emptyList(),
+    scenarios: List<Scenario> = emptyList()
 ) : CharacterRepository {
     private val charFlow = MutableStateFlow(chars)
     private val coneFlow = MutableStateFlow(cones)
-    private val relicFlow = MutableStateFlow<List<RelicSet>>(emptyList())
-    private val enemyFlow = MutableStateFlow<List<Enemy>>(emptyList())
-    private val scenarioFlow = MutableStateFlow<List<Scenario>>(emptyList())
+    private val relicFlow = MutableStateFlow(relics)
+    private val enemyFlow = MutableStateFlow(enemies)
+    private val scenarioFlow = MutableStateFlow(scenarios)
     private val buildFlow = MutableStateFlow<List<PlayerBuild>>(emptyList())
 
     override fun observeAllCharacters(): Flow<List<Character>> = charFlow.asStateFlow()
