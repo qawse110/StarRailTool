@@ -9,11 +9,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mystarrail.tool.StarRailApp
 import com.mystarrail.tool.data.model.Element
+import com.mystarrail.tool.data.seed.SeedImporter
 import com.mystarrail.tool.ui.characters.components.CharacterCard
 
 @Composable
@@ -57,12 +59,38 @@ fun CharactersScreen(
         }
         Spacer(Modifier.height(8.dp))
 
+        // Seed bootstrap 状态卡（仅在导入失败/进行中时显示）
+        val seedStatus = app.seedImportResult
         if (state.filtered.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text("暂无数据")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    when {
+                        seedStatus is SeedImporter.ImportResult.Failed -> {
+                            Text(
+                                "种子数据导入失败",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                seedStatus.reason,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        seedStatus == null -> {
+                            CircularProgressIndicator()
+                            Spacer(Modifier.height(8.dp))
+                            Text("正在加载种子数据…")
+                        }
+                        else -> {
+                            Text("暂无数据")
+                        }
+                    }
+                }
             }
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -23,5 +23,11 @@ sealed interface EidolonEffect {
         val value: Double
     ) : EidolonEffect
 
+    /** 战技/终结技/天赋/追击/DOT 等指定类型的直接乘区加成。 */
+    data class SkillBoost(
+        val type: SkillType,
+        val multiplier: Double
+    ) : EidolonEffect
+
     data class Composite(val effects: List<EidolonEffect>) : EidolonEffect
 }

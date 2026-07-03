@@ -2,6 +2,7 @@ package com.mystarrail.tool.data.local
 
 import com.mystarrail.tool.data.model.DmgCondition
 import com.mystarrail.tool.data.model.EidolonEffect
+import com.mystarrail.tool.data.model.SkillType
 import com.mystarrail.tool.data.model.StatType
 import com.mystarrail.tool.data.model.Tag
 import com.mystarrail.tool.data.model.Target
@@ -50,6 +51,11 @@ object EidolonEffectJson {
                 put("stat", e.stat.name)
                 put("value", e.value)
             }
+            is EidolonEffect.SkillBoost -> {
+                put("type", "SkillBoost")
+                put("skillType", e.type.name)
+                put("multiplier", e.multiplier)
+            }
             is EidolonEffect.Composite -> {
                 put("type", "Composite")
                 put("effects", buildJsonArray { e.effects.forEach { add(toJsonElement(it)) } })
@@ -77,6 +83,10 @@ object EidolonEffectJson {
             "EnemyDebuff" -> EidolonEffect.EnemyDebuff(
                 stat = StatType.valueOf(obj["stat"]!!.jsonPrimitive.content),
                 value = obj["value"]!!.jsonPrimitive.double
+            )
+            "SkillBoost" -> EidolonEffect.SkillBoost(
+                type = SkillType.valueOf(obj["skillType"]!!.jsonPrimitive.content),
+                multiplier = obj["multiplier"]!!.jsonPrimitive.double
             )
             "Composite" -> EidolonEffect.Composite(
                 effects = obj["effects"]!!.jsonArray.map { fromJsonElement(it) }

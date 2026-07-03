@@ -106,5 +106,6 @@ data class SeedEidolonEffect(
     val note: String? = null,
     val multiplier: Double? = null,
     val condition: String? = null,
+    val skillType: String? = null,
     val effects: List<SeedEidolonEffect> = emptyList()
 )
