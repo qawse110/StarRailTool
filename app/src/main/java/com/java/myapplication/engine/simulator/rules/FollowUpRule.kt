@@ -11,7 +11,7 @@ class FollowUpRule : MechanicRule {
 
     override fun onActionStart(c: Combatant, team: List<Combatant>, enemies: List<Combatant>, events: MutableList<RoundEvent>) {
         if (c.character.scaling.followUpMult <= 0) return
-        val target = enemies.firstOrNull { !it.isDead() } ?: return
+        val target = enemies.firstOrNull { !it.isDead() && it.hp > 0 } ?: return
 
         val dmg = c.character.scaling.followUpMult * c.stats.atk * 0.5
         target.hp -= dmg
