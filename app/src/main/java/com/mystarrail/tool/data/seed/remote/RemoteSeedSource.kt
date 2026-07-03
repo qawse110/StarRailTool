@@ -80,9 +80,14 @@ class RemoteSeedSource(
     companion object {
         private const val TAG = "RemoteSeedSource"
 
-        /** https://github.com/Mar-7th/StarRailRes master 分支。 */
+        /**
+         * https://github.com/Mar-7th/StarRailRes master 分支，**简中**索引。
+         *
+         * cn 版的 name/desc 是中文（如 "三月七"），但 path/element/type 等
+         * 枚举字段仍是英文枚举名（Hunt/Erudition/Ice...），不影响 transformer。
+         */
         const val DEFAULT_BASE_URL =
-            "https://raw.githubusercontent.com/Mar-7th/StarRailRes/master/index_new/en"
+            "https://raw.githubusercontent.com/Mar-7th/StarRailRes/master/index_new/cn"
 
         /** 角色/光锥/遗器/星魂全套共 10 个文件。transformer 需全部。 */
         val CORE_FILES: Set<File> = setOf(
