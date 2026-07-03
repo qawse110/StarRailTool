@@ -2,9 +2,7 @@ package com.java.myapplication
 
 import android.app.Application
 import androidx.work.Configuration
-import com.java.myapplication.data.local.AppDatabase
-import com.java.myapplication.data.repository.CharacterRepository
-import com.java.myapplication.data.seed.SeedImporter
+import com.java.myapplication.util.ServiceLocator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,15 +12,15 @@ class StarRailApp : Application(), Configuration.Provider {
 
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    val database: AppDatabase by lazy { AppDatabase.get(this) }
-    val repository: CharacterRepository by lazy { CharacterRepository(database) }
-    val seedImporter: SeedImporter by lazy { SeedImporter(this, database) }
+    lateinit var services: ServiceLocator
+        private set
 
     override fun onCreate() {
         super.onCreate()
+        services = ServiceLocator(this)
         appScope.launch {
-            if (database.characterDao().count() == 0) {
-                seedImporter.importFromAssets()
+            if (services.database.characterDao().count() == 0) {
+                services.seedImporter.importFromAssets()
             }
         }
     }
