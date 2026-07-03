@@ -27,6 +27,7 @@ import com.java.myapplication.data.model.SkillType
 import com.java.myapplication.data.model.Stats
 import com.java.myapplication.data.model.Tag
 import com.java.myapplication.data.model.Target
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -40,18 +41,15 @@ class SeedImporter(
 
     suspend fun importFromAssets(assetPath: String = "seed-data-v1.json"): ImportResult =
         withContext(Dispatchers.IO) {
+            val rawJson = readAsset(assetPath) ?: return@withContext ImportResult.Failed("Cannot read $assetPath")
             val root = try {
-                context.assets.open(assetPath).use { input ->
-                    json.decodeFromString(SeedRoot.serializer(), input.readBytes().decodeToString())
-                }
-            } catch (e: IOException) {
-                return@withContext ImportResult.Failed("Cannot read $assetPath: ${e.message}")
+                json.decodeFromString(SeedRoot.serializer(), rawJson)
             } catch (e: Exception) {
                 return@withContext ImportResult.Failed("Parse error: ${e.message}")
             }
 
             try {
-                db.runInTransaction {
+                db.withTransaction {
                     val chars = root.characters.map { it.toModel() }
                     db.characterDao().insertAll(chars.map(CharacterEntity::fromModel))
 
@@ -147,7 +145,7 @@ class SeedImporter(
     )
 
     private fun SeedScenario.toModel(): Scenario = Scenario(
-        id = id, name = name, enemyIds = enemyIds,
+        id = id, name = name, enemies = emptyList(),  // resolved at Repository layer
         difficulty = difficulty, notes = notes
     )
 
@@ -181,4 +179,12 @@ class SeedImporter(
 
     private fun StatType_valueOf(name: String?) =
         com.java.myapplication.data.model.StatType.valueOf(name ?: "ATK")
+
+    private fun readAsset(path: String): String? = try {
+        context.assets.open(path).use { it.readBytes().decodeToString() }
+    } catch (e: IOException) {
+        null
+    } catch (e: Exception) {
+        null
+    }
 }
