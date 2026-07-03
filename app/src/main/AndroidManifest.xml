@@ -2,7 +2,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!--
+        远程数据源（Mar-7th/StarRailRes, https://raw.githubusercontent.com）
+        和 Scraper URL 抓取（jsoup）都需要出站 HTTP。
+        android:usesCleartextTraffic="true" 允许非 HTTPS 源（如 wiki 部分内网）。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
+        android:usesCleartextTraffic="true"
         android:name=".StarRailApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
