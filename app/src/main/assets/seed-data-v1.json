@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "publishedAt": "2026-07-03T00:00:00Z",
+  "characters": [
+    {
+      "id": "seele",
+      "name": "希儿",
+      "rarity": 5,
+      "path": "HUNT",
+      "element": "QUANTUM",
+      "role": "DPS",
+      "tags": ["SINGLE_TARGET", "CRIT_BOOST", "FOLLOW_UP"],
+      "baseStats": { "hp": 931.0, "atk": 756.0, "def": 363.0, "spd": 115.0 },
+      "scaling": { "skillMult": 2.2, "ultMult": 4.2, "talentMult": 3.0, "followUpMult": 2.0, "aoeRatio": 0.0 },
+      "cycleProfile": { "cycleActions": 4, "spdBreakpoints": [134.0, 143.0, 160.0], "isFollowUp": true, "isDot": false },
+      "iconUrl": "https://example.com/seele.png",
+      "version": 1
+    },
+    {
+      "id": "himeko",
+      "name": "姬子",
+      "rarity": 5,
+      "path": "MAGE",
+      "element": "FIRE",
+      "role": "DPS",
+      "tags": ["AOE", "FOLLOW_UP", "ULT_DMG_BONUS"],
+      "baseStats": { "hp": 1041.0, "atk": 756.0, "def": 363.0, "spd": 112.0 },
+      "scaling": { "skillMult": 1.6, "ultMult": 3.4, "talentMult": 1.5, "followUpMult": 1.4, "aoeRatio": 0.8 },
+      "cycleProfile": { "cycleActions": 4, "spdBreakpoints": [134.0, 143.0, 160.0], "isFollowUp": true, "isDot": false },
+      "iconUrl": "https://example.com/himeko.png",
+      "version": 1
+    },
+    {
+      "id": "jingyuan",
+      "name": "景元",
+      "rarity": 5,
+      "path": "MAGE",
+      "element": "LIGHTNING",
+      "role": "DPS",
+      "tags": ["AOE", "FOLLOW_UP", "ULT_DMG_BONUS"],
+      "baseStats": { "hp": 1164.0, "atk": 698.0, "def": 485.0, "spd": 99.0 },
+      "scaling": { "skillMult": 1.4, "ultMult": 2.8, "talentMult": 2.5, "followUpMult": 1.3, "aoeRatio": 0.7 },
+      "cycleProfile": { "cycleActions": 3, "spdBreakpoints": [134.0, 143.0, 160.0], "isFollowUp": true, "isDot": false },
+      "iconUrl": "https://example.com/jingyuan.png",
+      "version": 1
+    },
+    {
+      "id": "kafka",
+      "name": "卡芙卡",
+      "rarity": 5,
+      "path": "WARLOCK",
+      "element": "LIGHTNING",
+      "role": "DPS",
+      "tags": ["DOT", "ULT_DMG_BONUS", "DEBUFF"],
+      "baseStats": { "hp": 1106.0, "atk": 706.0, "def": 461.0, "spd": 112.0 },
+      "scaling": { "skillMult": 2.0, "ultMult": 2.6, "talentMult": 2.8, "followUpMult": 0.0, "aoeRatio": 0.3 },
+      "cycleProfile": { "cycleActions": 4, "spdBreakpoints": [134.0, 143.0, 160.0], "isFollowUp": false, "isDot": true },
+      "iconUrl": "https://example.com/kafka.png",
+      "version": 1
+    },
+    {
+      "id": "bronya",
+      "name": "布洛妮娅",
+      "rarity": 5,
+      "path": "HARMONY",
+      "element": "WIND",
+      "role": "SUPPORT",
+      "tags": ["ACTION_ADVANCE", "ATK_BOOST", "SPEED_BOOST"],
+      "baseStats": { "hp": 1241.0, "atk": 582.0, "def": 533.0, "spd": 134.0 },
+      "scaling": { "skillMult": 0.0, "ultMult": 1.0, "talentMult": 0.0, "followUpMult": 0.0, "aoeRatio": 0.0 },
+      "cycleProfile": { "cycleActions": 5, "spdBreakpoints": [160.0], "isFollowUp": false, "isDot": false },
+      "iconUrl": "https://example.com/bronya.png",
+      "version": 1
+    }
+  ],
+  "lightCones": [
+    {
+      "id": "in_the_night",
+      "name": "拂晓之前",
+      "path": "HUNT",
+      "rarity": 5,
+      "passiveName": "夜晚的尽头",
+      "passiveEffect": { "type": "DamageBonus", "multiplier": 0.6, "condition": "ALWAYS" },
+      "s5Multiplier": 1.0
+    },
+    {
+      "id": "along_the_passing_shine",
+      "name": "沿用追迹",
+      "path": "HUNT",
+      "rarity": 4,
+      "passiveName": "前进的勇气",
+      "passiveEffect": { "type": "DamageBonus", "multiplier": 0.4, "condition": "ALWAYS" },
+      "s5Multiplier": 1.0
+    },
+    {
+      "id": "victory_moment",
+      "name": "胜利时刻",
+      "path": "HUNT",
+      "rarity": 3,
+      "passiveName": "致胜",
+      "passiveEffect": { "type": "StatBoost", "stat": "ATK", "value": 0.2, "target": "SELF" },
+      "s5Multiplier": 1.0
+    },
+    {
+      "id": "galactic_railway_night",
+      "name": "银河铁道之夜",
+      "path": "MAGE",
+      "rarity": 5,
+      "passiveName": "星光璀璨",
+      "passiveEffect": { "type": "Composite", "effects": [
+        { "type": "DamageBonus", "multiplier": 0.3, "condition": "ULT_ACTIVE" },
+        { "type": "StatBoost", "stat": "ATK", "value": 0.2, "target": "SELF" }
+      ] },
+      "s5Multiplier": 1.0
+    },
+    {
+      "id": "to_tomorrow",
+      "name": "致明日",
+      "path": "HARMONY",
+      "rarity": 5,
+      "passiveName": "前进",
+      "passiveEffect": { "type": "Composite", "effects": [
+        { "type": "StatBoost", "stat": "ATK", "value": 0.4, "target": "SELF" },
+        { "type": "StatBoost", "stat": "SPD", "value": 0.12, "target": "SELF" }
+      ] },
+      "s5Multiplier": 1.0
+    }
+  ],
+  "relicSets": [
+    {
+      "id": "forge_of_lava",
+      "name": "熔岩锻造者的火套",
+      "twoPiece": { "type": "StatBoost", "stat": "ATK", "value": 0.12, "target": "SELF" },
+      "fourPiece": { "type": "DamageBonus", "multiplier": 0.12, "condition": "ALWAYS" },
+      "suitableFor": ["DPS", "SUB_DPS"]
+    },
+    {
+      "id": "street_glove",
+      "name": "街头出身的拳套",
+      "twoPiece": { "type": "StatBoost", "stat": "ATK", "value": 0.12, "target": "SELF" },
+      "fourPiece": { "type": "DamageBonus", "multiplier": 0.15, "condition": "FOLLOW_UP" },
+      "suitableFor": ["DPS"]
+    },
+    {
+      "id": "quantum_set",
+      "name": "量子套",
+      "twoPiece": { "type": "StatBoost", "stat": "ATK", "value": 0.12, "target": "SELF" },
+      "fourPiece": { "type": "DamageBonus", "multiplier": 0.10, "condition": "ALWAYS" },
+      "suitableFor": ["DPS", "SUPPORT"]
+    }
+  ],
+  "enemies": [
+    { "id": "boss_cocolia", "name": "可可利亚", "count": 1, "weaknesses": ["QUANTUM", "WIND"], "type": "BOSS", "hp": 200000.0, "toughness": 240.0, "mechanics": ["冰封", "召唤"] },
+    { "id": "boss_frigid_pillar", "name": "寒冰柱", "count": 1, "weaknesses": ["FIRE"], "type": "BOSS", "hp": 180000.0, "toughness": 200.0, "mechanics": [] },
+    { "id": "elite_watcher", "name": "反物质监视者", "count": 1, "weaknesses": ["FIRE", "IMAGINARY"], "type": "ELITE", "hp": 80000.0, "toughness": 120.0 },
+    { "id": "elite_shadow_jackal", "name": "暗影豺狼", "count": 1, "weaknesses": ["ICE"], "type": "ELITE", "hp": 60000.0, "toughness": 100.0 },
+    { "id": "mob_thief", "name": "虚卒·掠夺者", "count": 3, "weaknesses": ["PHYSICAL", "QUANTUM"], "type": "MOB", "hp": 30000.0, "toughness": 60.0 },
+    { "id": "mob_mage", "name": "虚卒·咒法师", "count": 2, "weaknesses": ["LIGHTNING"], "type": "MOB", "hp": 25000.0, "toughness": 50.0 },
+    { "id": "mob_dog", "name": "虚卒·犬", "count": 4, "weaknesses": ["FIRE"], "type": "MOB", "hp": 15000.0, "toughness": 30.0 },
+    { "id": "summon_ice_pillar", "name": "冰柱召唤物", "count": 1, "weaknesses": ["FIRE"], "type": "SUMMON", "hp": 20000.0, "toughness": 30.0 },
+    { "id": "doom_keeper", "name": "毁灭者", "count": 1, "weaknesses": ["WIND"], "type": "DOOM", "hp": 300000.0, "toughness": 360.0, "mechanics": ["全队易伤"] },
+    { "id": "elite_lackey", "name": "打手", "count": 2, "weaknesses": ["IMAGINARY"], "type": "ELITE", "hp": 50000.0, "toughness": 90.0 }
+  ],
+  "scenarios": [
+    { "id": "mf_1", "name": "混沌回忆 第一期", "enemyIds": ["boss_cocolia", "elite_watcher", "mob_thief"], "difficulty": 4, "notes": "建议带风/量子" },
+    { "id": "mf_2", "name": "混沌回忆 第二期", "enemyIds": ["doom_keeper", "elite_lackey"], "difficulty": 5, "notes": "考验生存" },
+    { "id": "pf_1", "name": "虚构叙事 第一期", "enemyIds": ["mob_thief", "mob_mage", "mob_dog", "summon_ice_pillar"], "difficulty": 3, "notes": "对群场合" }
+  ],
+  "eidolons": [
+    { "id": "seele_e1", "characterId": "seele", "level": 1, "name": "再相会", "effect": { "type": "StatBoost", "stat": "CRIT_DMG", "value": 0.2, "target": "SELF" }, "major": false },
+    { "id": "seele_e2", "characterId": "seele", "level": 2, "name": "蝴蝶效应", "effect": { "type": "Composite", "effects": [
+      { "type": "StatBoost", "stat": "SPD", "value": 0.3, "target": "SELF" }
+    ] }, "major": true },
+    { "id": "seele_e3", "characterId": "seele", "level": 3, "name": "破晓", "effect": { "type": "SkillBoost", "skillType": "ULT", "multiplier": 0.2 }, "major": false },
+    { "id": "seele_e4", "characterId": "seele", "level": 4, "name": "突袭", "effect": { "type": "DamageBonus", "multiplier": 0.2, "condition": "FOLLOW_UP" }, "major": false },
+    { "id": "seele_e5", "characterId": "seele", "level": 5, "name": "加速", "effect": { "type": "SkillBoost", "skillType": "SKILL", "multiplier": 0.2 }, "major": false },
+    { "id": "seele_e6", "characterId": "seele", "level": 6, "name": "重逢", "effect": { "type": "NewMechanic", "mechanic": "FOLLOW_UP", "param": 1.0, "note": "再现状态下追击必暴击" }, "major": true },
+
+    { "id": "kafka_e1", "characterId": "kafka", "level": 1, "name": "折磨", "effect": { "type": "DamageBonus", "multiplier": 0.2, "condition": "DOT" }, "major": false },
+    { "id": "kafka_e2", "characterId": "kafka", "level": 2, "name": "尖叫", "effect": { "type": "NewMechanic", "mechanic": "DOT", "param": 2.0, "note": "DOT 伤害翻倍" }, "major": true },
+    { "id": "kafka_e3", "characterId": "kafka", "level": 3, "name": "私语", "effect": { "type": "SkillBoost", "skillType": "ULT", "multiplier": 0.2 }, "major": false },
+    { "id": "kafka_e4", "characterId": "kafka", "level": 4, "name": "入侵", "effect": { "type": "StatBoost", "stat": "EHR", "value": 0.3, "target": "SELF" }, "major": false },
+    { "id": "kafka_e5", "characterId": "kafka", "level": 5, "name": "渗透", "effect": { "type": "SkillBoost", "skillType": "SKILL", "multiplier": 0.2 }, "major": false },
+    { "id": "kafka_e6", "characterId": "kafka", "level": 6, "name": "控制", "effect": { "type": "NewMechanic", "mechanic": "DEBUFF", "param": 1.0, "note": "DOT 触发立即再触发一次" }, "major": true },
+
+    { "id": "bronya_e1", "characterId": "bronya", "level": 1, "name": "战术", "effect": { "type": "NewMechanic", "mechanic": "ACTION_ADVANCE", "param": 1.0, "note": "拉条 100%" }, "major": true },
+    { "id": "bronya_e2", "characterId": "bronya", "level": 2, "name": "协同", "effect": { "type": "StatBoost", "stat": "ATK", "value": 0.15, "target": "SELF" }, "major": false },
+    { "id": "bronya_e3", "characterId": "bronya", "level": 3, "name": "节拍", "effect": { "type": "SkillBoost", "skillType": "ULT", "multiplier": 0.2 }, "major": false },
+    { "id": "bronya_e4", "characterId": "bronya", "level": 4, "name": "协奏", "effect": { "type": "StatBoost", "stat": "CRIT_DMG", "value": 0.2, "target": "ALLY" }, "major": false },
+    { "id": "bronya_e5", "characterId": "bronya", "level": 5, "name": "战鼓", "effect": { "type": "SkillBoost", "skillType": "SKILL", "multiplier": 0.2 }, "major": false },
+    { "id": "bronya_e6", "characterId": "bronya", "level": 6, "name": "终章", "effect": { "type": "NewMechanic", "mechanic": "ACTION_ADVANCE", "param": 2.0, "note": "战技后下个队友也获得拉条 50%" }, "major": true },
+
+    { "id": "himeko_e1", "characterId": "himeko", "level": 1, "name": "热情", "effect": { "type": "StatBoost", "stat": "ATK", "value": 0.2, "target": "SELF" }, "major": false },
+    { "id": "himeko_e2", "characterId": "himeko", "level": 2, "name": "赤焰", "effect": { "type": "DamageBonus", "multiplier": 0.25, "condition": "FOLLOW_UP" }, "major": true },
+    { "id": "himeko_e3", "characterId": "himeko", "level": 3, "name": "炎舞", "effect": { "type": "SkillBoost", "skillType": "ULT", "multiplier": 0.2 }, "major": false },
+    { "id": "himeko_e4", "characterId": "himeko", "level": 4, "name": "燃烧", "effect": { "type": "StatBoost", "stat": "CRIT_RATE", "value": 0.12, "target": "SELF" }, "major": false },
+    { "id": "himeko_e5", "characterId": "himeko", "level": 5, "name": "星火", "effect": { "type": "SkillBoost", "skillType": "SKILL", "multiplier": 0.2 }, "major": false },
+    { "id": "himeko_e6", "characterId": "himeko", "level": 6, "name": "天火", "effect": { "type": "NewMechanic", "mechanic": "FOLLOW_UP", "param": 1.0, "note": "追击伤害 +30%" }, "major": true },
+
+    { "id": "jingyuan_e1", "characterId": "jingyuan", "level": 1, "name": "雷电", "effect": { "type": "DamageBonus", "multiplier": 0.2, "condition": "FOLLOW_UP" }, "major": false },
+    { "id": "jingyuan_e2", "characterId": "jingyuan", "level": 2, "name": "神君", "effect": { "type": "DamageBonus", "multiplier": 0.25, "condition": "FOLLOW_UP" }, "major": true },
+    { "id": "jingyuan_e3", "characterId": "jingyuan", "level": 3, "name": "威压", "effect": { "type": "SkillBoost", "skillType": "ULT", "multiplier": 0.2 }, "major": false },
+    { "id": "jingyuan_e4", "characterId": "jingyuan", "level": 4, "name": "雷鸣", "effect": { "type": "StatBoost", "stat": "CRIT_RATE", "value": 0.12, "target": "SELF" }, "major": false },
+    { "id": "jingyuan_e5", "characterId": "jingyuan", "level": 5, "name": "天雷", "effect": { "type": "SkillBoost", "skillType": "SKILL", "multiplier": 0.2 }, "major": false },
+    { "id": "jingyuan_e6", "characterId": "jingyuan", "level": 6, "name": "终末", "effect": { "type": "NewMechanic", "mechanic": "FOLLOW_UP", "param": 1.0, "note": "神君层数上限 +6" }, "major": true }
+  ]
+}
