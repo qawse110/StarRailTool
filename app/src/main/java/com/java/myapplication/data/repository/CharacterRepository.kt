@@ -4,6 +4,7 @@ import com.java.myapplication.data.model.Character
 import com.java.myapplication.data.model.Eidolon
 import com.java.myapplication.data.model.Enemy
 import com.java.myapplication.data.model.LightCone
+import com.java.myapplication.data.model.PlayerBuild
 import com.java.myapplication.data.model.RelicSet
 import com.java.myapplication.data.model.Scenario
 import kotlinx.coroutines.flow.Flow
@@ -29,4 +30,10 @@ interface CharacterRepository {
     fun observeAllScenarios(): Flow<List<Scenario>>
 
     suspend fun getEidolonsFor(characterId: String): List<Eidolon>
+
+    // --- M10 玩家面板 ---
+    fun observeAllPlayerBuilds(): Flow<List<PlayerBuild>>
+    fun observePlayerBuild(characterId: String): Flow<List<PlayerBuild>>
+    suspend fun upsertPlayerBuild(build: PlayerBuild)
+    suspend fun deletePlayerBuild(id: Long)
 }

@@ -3,10 +3,12 @@ package com.java.myapplication.data.repository
 import com.java.myapplication.data.local.AppDatabase
 import com.java.myapplication.data.local.EidolonEffectJson
 import com.java.myapplication.data.local.PassiveEffectJson
+import com.java.myapplication.data.local.PlayerBuildEntity
 import com.java.myapplication.data.model.Character
 import com.java.myapplication.data.model.Eidolon
 import com.java.myapplication.data.model.Enemy
 import com.java.myapplication.data.model.LightCone
+import com.java.myapplication.data.model.PlayerBuild
 import com.java.myapplication.data.model.RelicSet
 import com.java.myapplication.data.model.Scenario
 import kotlinx.coroutines.flow.Flow
@@ -60,4 +62,22 @@ class RoomCharacterRepository(private val db: AppDatabase) : CharacterRepository
         db.eidolonDao().getForCharacter(characterId).map { entity ->
             entity.toModel(EidolonEffectJson.decode(entity.effectJson))
         }
+
+    // --- M10 玩家面板 ---
+    override fun observeAllPlayerBuilds() =
+        db.playerBuildDao().observeAll().map { list -> list.map { it.toModel() } }
+
+    override fun observePlayerBuild(characterId: String) =
+        db.playerBuildDao().observeForCharacter(characterId).map { list ->
+            list.map { it.toModel() }
+        }
+
+    override suspend fun upsertPlayerBuild(build: PlayerBuild) {
+        db.playerBuildDao().insert(PlayerBuildEntity.fromModel(build))
+    }
+
+    override suspend fun deletePlayerBuild(id: Long) {
+        val existing = db.playerBuildDao().getById(id) ?: return
+        db.playerBuildDao().delete(existing)
+    }
 }
