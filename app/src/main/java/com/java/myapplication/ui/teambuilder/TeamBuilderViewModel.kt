@@ -11,7 +11,7 @@ import com.java.myapplication.engine.simulator.ScoringEngine
 import com.java.myapplication.engine.simulator.sim.SimulationResult
 import com.java.myapplication.engine.simulator.sim.toCombatant
 import com.java.myapplication.util.ServiceLocator
-import kotlinx.coroutines.Dispatchers
+import com.java.myapplication.util.SimulationResultStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 data class TeamUiState(
     val allChars: List<Character> = emptyList(),
@@ -35,7 +34,7 @@ data class TeamUiState(
 class TeamBuilderViewModel(
     private val repository: CharacterRepository,
     @Suppress("unused") private val scoringEngine: ScoringEngine,
-    private val services: ServiceLocator
+    private val resultStore: SimulationResultStore
 ) : ViewModel() {
 
     private val selectedIds = MutableStateFlow<Set<String>>(emptySet())
@@ -85,11 +84,9 @@ class TeamBuilderViewModel(
         if (ids.size != 4) return
         internalState.update { it.copy(isSimulating = true) }
         viewModelScope.launch {
-            val result = withContext(Dispatchers.Default) {
-                runSimulation(ids.toList())
-            }
-            // 把 result 写到 ServiceLocator 给 BattleLog 用
-            services.lastSimulationResult = result
+            val result = runSimulation(ids.toList())
+            // 把 result 写到 store 给 BattleLog 用
+            resultStore.lastSimulationResult = result
             internalState.update {
                 it.copy(
                     isSimulating = false,
@@ -115,19 +112,23 @@ class TeamBuilderViewModel(
             hp = 200_000.0,
             toughness = 240.0
         )
-        // 用 ServiceLocator 的 DiscreteEventSimulator 跑（不是 ScoringEngine 内部那个）
-        return services.simulator.simulate(team, listOf(enemy.toCombatant()))
+        // 用 scoringEngine 内部 sim 跑 — 不依赖 ServiceLocator
+        return com.java.myapplication.engine.simulator.sim.DiscreteEventSimulator(
+            com.java.myapplication.engine.simulator.damage.DamageCalculator(
+                com.java.myapplication.engine.simulator.tables.FormulaTables()
+            )
+        ).simulate(team, listOf(enemy.toCombatant()))
     }
 
     companion object {
         fun factory(
             repository: CharacterRepository,
             scoringEngine: ScoringEngine,
-            services: ServiceLocator
+            resultStore: SimulationResultStore
         ) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                TeamBuilderViewModel(repository, scoringEngine, services) as T
+                TeamBuilderViewModel(repository, scoringEngine, resultStore) as T
         }
     }
 }
