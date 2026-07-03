@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.java.myapplication"
+    namespace = "com.mystarrail.tool"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.java.myapplication"
+        applicationId = "com.mystarrail.tool"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
