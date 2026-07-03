@@ -59,22 +59,20 @@ class RemoteSeedSource(
 
     private fun fetchFile(file: File, timeoutMs: Long): JsonElement {
         val url = "$baseUrl/${file.filename}"
+        // 直接复用注入的 [client]，避免每次 newBuilder 克隆连接池 + Dispatcher
+        // （10 并发浪费 10 套线程）。timeoutMs 由 defaultClient() 的 callTimeout 统一约束。
         val req = Request.Builder()
             .url(url)
             .header("User-Agent", "StarRailTool/1.0")
             .build()
-        client.newBuilder()
-            .callTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-            .build()
-            .newCall(req)
+        return client.newCall(req)
             .execute()
             .use { resp ->
                 if (!resp.isSuccessful) error("HTTP ${resp.code} for $url")
                 val body = resp.body?.string() ?: error("Empty body from $url")
                 Log.d(TAG, "Fetched $url (${body.length} bytes)")
-                return jsonLenient.parseToJsonElement(body)
+                jsonLenient.parseToJsonElement(body)
             }
-            error("Unreachable: response not used")
     }
 
     companion object {
@@ -100,6 +98,9 @@ class RemoteSeedSource(
         private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(8, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
+            // 全局 callTimeout 覆盖 connect+read+write；fetch 接收的 timeoutMs
+            // 由上层 withTimeout 协程约束（StarRailApp.bootstrap 7 秒）
+            .callTimeout(15, TimeUnit.SECONDS)
             .build()
 
         /** 容忍 unknown keys（StarRailRes 会持续加字段）。 */

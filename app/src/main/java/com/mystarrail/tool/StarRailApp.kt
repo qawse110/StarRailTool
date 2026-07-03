@@ -28,6 +28,7 @@ class StarRailApp : Application(), Configuration.Provider {
      */
     @Volatile
     var remoteFetchResult: RemoteFetchOutcome? = null
+        private set
 
     sealed interface RemoteFetchOutcome {
         data class Success(val characters: Int, val lightCones: Int, val relicSets: Int, val eidolons: Int) : RemoteFetchOutcome

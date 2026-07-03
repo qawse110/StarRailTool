@@ -1,7 +1,6 @@
 package com.mystarrail.tool.data.seed.remote
 
 import com.mystarrail.tool.data.model.Character
-import com.mystarrail.tool.data.model.CycleProfile
 import com.mystarrail.tool.data.model.DmgCondition
 import com.mystarrail.tool.data.model.Eidolon
 import com.mystarrail.tool.data.model.EidolonEffect
@@ -99,26 +98,7 @@ object Mar7thToSeedTransformer {
             runCatching { el.toRelicSet() }.getOrNull()
         }
         val outEidolons = outChars.flatMap { ch ->
-            val rawId = ch.id.removePrefix("mar7th_")
-            val rankIds = characters[rawId]?.jsonObject
-                ?.get("ranks")?.jsonArray
-                ?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() }
-                ?: emptyList()
-            rankIds.mapNotNull { rid ->
-                val node = ranks[rid]?.jsonObject ?: return@mapNotNull null
-                runCatching {
-                    val level = runCatching { node["rank"]?.jsonPrimitive?.content?.toInt() }
-                        .getOrNull() ?: 0
-                    Eidolon(
-                        id = "mar7th_$rid",
-                        characterId = ch.id,
-                        level = level,
-                        name = runCatching { node["name"]?.jsonPrimitive?.content }.getOrNull().orEmpty(),
-                        effect = node.toEidolonEffect(),
-                        major = (level % 2 == 0) && level > 0
-                    )
-                }.getOrNull()
-            }
+            transformEidolonsFor(ch, characters, ranks)
         }
 
         return SeedParser.ParseResult.Success(
@@ -129,6 +109,31 @@ object Mar7thToSeedTransformer {
             scenarios = emptyList(),
             eidolons = outEidolons
         )
+    }
+
+    // ===== Top-level transform helpers (SRP) =====
+
+    private fun transformEidolonsFor(
+        character: Character,
+        charactersFile: JsonObject,
+        ranksFile: JsonObject
+    ): List<Eidolon> {
+        val rawId = character.id.removePrefix("mar7th_")
+        val rankIds = charactersFile[rawId]?.jsonObject?.strArray("ranks") ?: emptyList()
+        return rankIds.mapNotNull { rid ->
+            val node = ranksFile[rid]?.jsonObject ?: return@mapNotNull null
+            runCatching {
+                val level = node.int("rank") ?: 0
+                Eidolon(
+                    id = "mar7th_$rid",
+                    characterId = character.id,
+                    level = level,
+                    name = node.str("name").orEmpty(),
+                    effect = node.toEidolonEffect(),
+                    major = level.let { it % 2 == 0 && it > 0 }
+                )
+            }.getOrNull()
+        }
     }
 
     // ===== Element mappers =====
@@ -149,7 +154,7 @@ object Mar7thToSeedTransformer {
             ?: Stats(hp = 1000.0, atk = 500.0, def = 300.0, spd = 100.0)
         val scaling = obj.toScaling(skills)
         val tags = inferTags(path, element)
-        val cycleProfile = inferCycleProfile(obj, skills)
+        // Issue #5 fix: 删除硬编码 spdBreakpoints 假数据；StarRailRes schema 未暴露最优速度档
         val iconUrl = obj.str("icon")
             ?.let { "https://raw.githubusercontent.com/Mar-7th/StarRailRes/master/$it" }
             ?: ""
@@ -163,7 +168,7 @@ object Mar7thToSeedTransformer {
             tags = tags,
             baseStats = baseStats,
             scaling = scaling,
-            cycleProfile = cycleProfile,
+            cycleProfile = null,
             iconUrl = iconUrl,
             version = 1
         )
@@ -233,30 +238,8 @@ object Mar7thToSeedTransformer {
         return tags
     }
 
-    private fun inferCycleProfile(character: JsonObject, skills: JsonObject): CycleProfile? {
-        val skillIds = character["skills"]?.jsonArray
-            ?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() }
-            ?: return null
-        val isDot = skillIds.any { sid ->
-            runCatching { skills[sid]?.jsonObject?.get("type")?.jsonPrimitive?.content }
-                .getOrNull() == "Dot"
-        }
-        val isFollowUp = skillIds.any { sid ->
-            runCatching { skills[sid]?.jsonObject?.get("type")?.jsonPrimitive?.content }
-                .getOrNull() == "FollowUp"
-        }
-        return CycleProfile(
-            cycleActions = 4,
-            spdBreakpoints = listOf(134.0, 143.0, 160.0),
-            isFollowUp = isFollowUp,
-            isDot = isDot
-        )
-    }
-
     private fun JsonObject.toScaling(skills: JsonObject): Scaling {
-        val skillIds = this["skills"]?.jsonArray
-            ?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() }
-            ?: emptyList()
+        val skillIds = strArray("skills")
         var skillMult = 1.0
         var ultMult = 2.0
         var talentMult = 1.5
@@ -265,7 +248,7 @@ object Mar7thToSeedTransformer {
 
         for (sid in skillIds) {
             val s = skills[sid]?.jsonObject ?: continue
-            val type = runCatching { s["type"]?.jsonPrimitive?.content }.getOrNull() ?: continue
+            val type = s.str("type") ?: continue
             val mult = s.extractMaxParam() ?: continue
             when (SKILL_TYPE_MAP[type]) {
                 SkillType.SKILL -> skillMult = mult
@@ -274,8 +257,7 @@ object Mar7thToSeedTransformer {
                 SkillType.FOLLOW_UP, SkillType.DOT -> followUpMult = mult
                 else -> {}
             }
-            val effect = runCatching { s["effect"]?.jsonPrimitive?.content }.getOrNull()
-            if (effect in AOE_EFFECTS) aoeRatio = 0.6
+            if (s.str("effect") in AOE_EFFECTS) aoeRatio = 0.6
         }
         return Scaling(
             skillMult = skillMult,
@@ -289,10 +271,8 @@ object Mar7thToSeedTransformer {
     // ===== Object-level helpers =====
 
     private fun JsonObject.toBaseStats(): Stats {
-        fun n(path: String, default: Double = 0.0): Double {
-            val baseEl = this[path]?.jsonObject?.get("base") ?: return default
-            return runCatching { baseEl.jsonPrimitive.double }.getOrNull() ?: default
-        }
+        fun n(path: String, default: Double = 0.0): Double =
+            this[path]?.jsonObject?.get("base")?.jsonPrimitive?.double ?: default
         return Stats(
             hp = n("hp", 1000.0),
             atk = n("atk", 500.0),
@@ -302,9 +282,8 @@ object Mar7thToSeedTransformer {
     }
 
     private fun JsonObject.toPassiveEffect(): PassiveEffect {
-        val desc = this.str("desc").orEmpty()
-        val firstValue = this["params"]?.jsonArray?.firstOrNull()?.jsonArray
-            ?.firstOrNull()?.let { runCatching { it.jsonPrimitive.double }.getOrNull() } ?: 0.0
+        val desc = str("desc").orEmpty()
+        val firstValue = paramsFirstValue() ?: 0.0
         val inferred = KeywordMatcher.infer(desc, firstValue)
             ?: return PassiveEffect.StatBoost(stat = StatType.ATK, value = firstValue)
         return inferred.toPassiveEffectFromKeyword(firstValue)
@@ -314,12 +293,11 @@ object Mar7thToSeedTransformer {
         val obj = runCatching { jsonObject }.getOrNull() ?: return PassiveEffect.StatBoost(
             stat = StatType.ATK, value = 0.0
         )
-        val effects = obj["effects"]?.jsonArray
-            ?.mapNotNull { runCatching { it.jsonObject }.getOrNull() }
+        val effects = obj["effects"]?.jsonArray?.mapNotNull { runCatching { it.jsonObject }.getOrNull() }
             ?: emptyList()
         val first = effects.firstOrNull()?.let {
-            val type = runCatching { it["type"]?.jsonPrimitive?.content }.getOrNull()
-            val value = runCatching { it["value"]?.jsonPrimitive?.double }.getOrNull() ?: 0.0
+            val type = it.str("type")
+            val value = it.doubleOrNull("value") ?: 0.0
             when (type) {
                 "HealRatioBase" -> PassiveEffect.StatBoost(stat = StatType.HP, value = value)
                 "AttackDelta" -> PassiveEffect.StatBoost(stat = StatType.ATK, value = value)
@@ -331,9 +309,8 @@ object Mar7thToSeedTransformer {
     }
 
     private fun JsonObject.toEidolonEffect(): EidolonEffect {
-        val desc = this.str("desc").orEmpty()
-        val firstParam = this["params"]?.jsonArray?.firstOrNull()?.jsonArray
-            ?.firstOrNull()?.let { runCatching { it.jsonPrimitive.double }.getOrNull() }
+        val desc = str("desc").orEmpty()
+        val firstParam = paramsFirstValue()
 
         if (firstParam == null) {
             return EidolonEffect.NewMechanic(
@@ -355,13 +332,25 @@ object Mar7thToSeedTransformer {
             ?.let { runCatching { it.jsonPrimitive.double }.getOrNull() }
     }
 
-    // ===== Safe accessors =====
+    private fun JsonObject.paramsFirstValue(): Double? =
+        this["params"]?.jsonArray?.firstOrNull()?.jsonArray
+            ?.firstOrNull()
+            ?.let { runCatching { it.jsonPrimitive.double }.getOrNull() }
+
+    // ===== Safe accessors (DRY: replaces 16 inlined runCatching patterns) =====
 
     private fun JsonObject.str(key: String): String? =
         runCatching { this[key]?.jsonPrimitive?.content }.getOrNull()
 
     private fun JsonObject.int(key: String): Int? =
         runCatching { this[key]?.jsonPrimitive?.content?.toInt() }.getOrNull()
+
+    private fun JsonObject.doubleOrNull(key: String): Double? =
+        runCatching { this[key]?.jsonPrimitive?.double }.getOrNull()
+
+    private fun JsonObject.strArray(key: String): List<String> =
+        this[key]?.jsonArray?.mapNotNull { runCatching { it.jsonPrimitive.content }.getOrNull() }
+            ?: emptyList()
 }
 
 // =====================================================================
