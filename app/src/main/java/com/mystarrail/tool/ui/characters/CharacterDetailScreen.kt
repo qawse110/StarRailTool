@@ -112,6 +112,7 @@ fun CharacterDetailScreen(
                     ScoreBar("配队协同", score.teamSynergyScore, 40.0)
                     ScoreBar("场景适配", score.scenarioScore, 20.0)
                     ScoreBar("机制完整度", score.mechanicCoverage, 10.0)
+                    ScoreBar("治疗/护盾", score.utilityScore, 10.0)
                 }
                 Spacer(Modifier.height(24.dp))
                 // [新增] 星魂介绍 D

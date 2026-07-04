@@ -1,6 +1,8 @@
 # Simulator Enhancement Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **实施状态：** ✅ 已全部完成（B1~B8 全部实现并验证，详见 git log commits bdd4486 ~ 3e1032e）
 
 **Goal:** Extend the StarRailTool battle simulator with 8 new capabilities (B1-B8) — DOT wiring, healing/shield buffs, EHR/EffectRes, critRate clamp, and a 6th scoring dimension (utilityScore).
 

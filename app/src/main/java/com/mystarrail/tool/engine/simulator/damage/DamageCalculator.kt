@@ -44,9 +44,6 @@ class DamageCalculator(
 
         val dmgBonusMul = 1.0 + attackerBuffs.damageBonus
         val easyDmgMul = 1.0 + debuffSnap.easyDmgTaken
-        // B6: EHR vs EffectRes hit-rate clamp (computed, applied when debuff damage path is added)
-        @Suppress("UNUSED_VARIABLE")
-        val effectHitClamp = (attackerBuffs.effectHitRate - debuffSnap.effectRes).coerceIn(0.0, 1.0)
         val weaknessMul = tables.weakness.multiplier(character.element, enemy.weaknesses)
         val res = tables.element.resist(character.element, character.element)
         val resMul = 1.0 - res
@@ -139,7 +136,11 @@ class DamageCalculator(
             val dotCritDmg = 1.0 + allBuffsSnap.critDmgBoost
             val dotCritExpect = 1.0 + dotCritRate * dotCritDmg
             val dotMul = 1.0 + allBuffsSnap.damageBonus
-            dotAtk * character.scaling.dotMult * dotCritExpect * dotMul * 0.6
+            // B6: EHR vs EffectRes hit-rate applied to debuff-type damage (DOT)
+            //   有效命中 = (1 + effectHitRate - enemyEffectRes).coerceIn(0, 1)
+            //   默认敌人 EffectRes = 0.3（对标忘却之庭精英）
+            val dotHitClamp = (1.0 + allBuffsSnap.effectHitRate - 0.3).coerceIn(0.0, 1.0)
+            dotAtk * character.scaling.dotMult * dotCritExpect * dotMul * 0.6 * dotHitClamp
         } else 0.0
 
         return CharacterUnitValue(

@@ -1,6 +1,11 @@
 # 崩坏星穹铁道强度量化工具 — 实施计划 04：玩家面板 + 配队 + 战斗日志
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **实施状态：** ✅ 已全部完成（详见 git log commits 68fc6b4 ~ 5098500，含 PlayerBuild CRUD + TeamBuilder + BattleLog）
+>
+> **2026-07-04 补充修复：**
+> - `BuildScreen.kt` 从占位符替换为完整 CRUD UI（TopAppBar + LazyColumn + BuildCard）
 
 **Goal:** 完成 M10~M11：BuildScreen（玩家自填角色练度的 CRUD）、TeamBuilderScreen（自由选 4 角色 + 跑 DES 模拟 + 评分）、BattleLogScreen（DES 输出的 RoundEvent 时间线）。
 

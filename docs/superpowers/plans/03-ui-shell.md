@@ -1,6 +1,8 @@
 # 崩坏星穹铁道强度量化工具 — 实施计划 03：UI 框架 + 角色库/详情
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **实施状态：** ✅ 已全部完成（详见 git log commits 310f3b5 ~ be6c706，底部 4 Tab + 抽屉 + 角色库 + 角色详情 + 7 个 UI 区块）
 
 **Goal:** 完成 M8~M9：构建单 Activity + Compose UI 框架（底部 4 Tab + 抽屉）、角色库页面、角色详情页（展示评分 + 强制光锥选择）。
 

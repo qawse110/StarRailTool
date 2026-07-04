@@ -1,7 +1,7 @@
 # Simulator Enhancement — Design Spec
 
 **Date:** 2026-07-04
-**Status:** Awaiting user approval (brainstorm Q1-Q6 settled, V3 完整方案)
+**Status:** ✅ Implemented (B1-B8 all committed, see git log bdd4486 ~ 3e1032e)
 **Scope:** 扩展战斗模拟器（V3 完整方案）
 
 ## Problem

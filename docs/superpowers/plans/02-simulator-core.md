@@ -1,6 +1,8 @@
 # 崩坏星穹铁道强度量化工具 — 实施计划 02：战斗模拟器核心
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **实施状态：** ✅ 已全部完成（详见 git log commits 906b1e0 ~ ede4fce，所有引擎类 + 规则 + DES + ScoringEngine 均已实现并验证）
 
 **Goal:** 完成 M4~M7：DamageCalculator（G1 期望）+ DiscreteEventSimulator（G2 DES）+ MechanicEngine（C1~C5 全部机制）+ 模拟器精度验证。
 

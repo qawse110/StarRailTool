@@ -1,6 +1,11 @@
 # Character Detail Rich Display Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+>
+> **实施状态：** ✅ 已全部完成（6 commits, 详见 git log bd235a2 ~ c5b41a3，含 A-G3 + I3 全部 7 个 UI 区块 + SkillTree 数据层 + Simulator 集成）
+>
+> **2026-07-04 补充修复：**
+> - `CharacterDetailScreen` 添加了第 6 维 `utilityScore` 的 ScoreBar 显示
 
 **Goal:** Add 7 display blocks (基础数值/技能倍率/标签/星魂介绍/光锥效果/遗器推荐/行迹完整数值链) to `CharacterDetailScreen`, persist 行迹 (skill tree) data from `Mar-7th/StarRailRes` to Room v1→v2 schema, and integrate skill tree stats into `DamageCalculator`.
 

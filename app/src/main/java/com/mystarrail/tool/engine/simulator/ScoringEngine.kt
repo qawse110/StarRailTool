@@ -68,11 +68,39 @@ class ScoringEngine(
         )
     }
 
+    /**
+     * 归一化角色单位价值：按 Role 分组比较，当前角色在该组中的相对位置。
+     * 返回 [0, 1] 的归一化值。
+     */
     private fun normalizeRole(
         uv: CharacterUnitValue,
         role: Role,
         all: List<CharacterUnitValue>
-    ): Double = 0.7
+    ): Double {
+        if (all.isEmpty()) return 0.5
+
+        // 根据角色类型选择主维度
+        val primary = when (role) {
+            Role.DPS, Role.SUB_DPS ->
+                uv.expectedSkillDmg + uv.expectedUltDmg + uv.expectedTalentDmg + uv.expectedFollowUpDmg
+            Role.HEALER -> uv.baseHealValue
+            Role.SHIELD -> uv.baseShieldValue
+            Role.SUPPORT -> uv.baseSupportValue
+        }
+
+        // 取同组角色在该维度的最大值
+        val maxAll = all.maxOf { other ->
+            when (role) {
+                Role.DPS, Role.SUB_DPS ->
+                    other.expectedSkillDmg + other.expectedUltDmg + other.expectedTalentDmg + other.expectedFollowUpDmg
+                Role.HEALER -> other.baseHealValue
+                Role.SHIELD -> other.baseShieldValue
+                Role.SUPPORT -> other.baseSupportValue
+            }
+        }
+
+        return if (maxAll > 0.0) (primary / maxAll).coerceIn(0.0, 1.0) else 0.5
+    }
 
     private fun cycleScore(c: Character): Double {
         val p = c.cycleProfile ?: return 0.5

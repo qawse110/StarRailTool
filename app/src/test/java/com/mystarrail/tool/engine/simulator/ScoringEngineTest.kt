@@ -121,4 +121,51 @@ class ScoringEngineTest {
         // seele 是个 DPS，没有 HEAL/SHIELD tag, baseHealValue/baseShieldValue 都 = 0
         assertThat(score.utilityScore).isEqualTo(0.0)
     }
+
+    @Test fun `normalizeRole returns 1_0 when only one character in all`() {
+        val score = engine.scoreCharacter(
+            seele,
+            ScoringConfig(
+                playerBuild = PlayerBuild(
+                    characterId = "seele", lightConeId = "in_the_night",
+                    relicSet4 = "quantum_set", mainStats = MainStats(
+                        StatType.CRIT_DMG, StatType.SPD, StatType.EHR, StatType.ATK
+                    ),
+                    subStats = emptyList()
+                ),
+                enemy = enemy
+            ),
+            allCharacters = listOf(seele),
+            defaultEnemy = enemy
+        )
+        // 只有 seele 自己时 primary/maxAll = 1.0 → 25 分满
+        assertThat(score.unitValueScore).isWithin(1e-6).of(25.0)
+    }
+
+    @Test fun `normalizeRole with two DPS chars ranks them`() {
+        val weaker = seele.copy(
+            id = "weaker", name = "弱角色",
+            baseStats = Stats(800.0, 400.0, 300.0, 100.0),
+            scaling = Scaling(1.0, 1.0, 1.0, 0.0, 0.0)
+        )
+        val score = engine.scoreCharacter(
+            seele,
+            ScoringConfig(
+                playerBuild = PlayerBuild(
+                    characterId = "seele", lightConeId = "in_the_night",
+                    relicSet4 = "quantum_set", mainStats = MainStats(
+                        StatType.CRIT_DMG, StatType.SPD, StatType.EHR, StatType.ATK
+                    ),
+                    subStats = emptyList()
+                ),
+                enemy = enemy
+            ),
+            allCharacters = listOf(seele, weaker),
+            defaultEnemy = enemy
+        )
+        // seele 比 weaker 数值高，所以 normalize > 0.5
+        assertThat(score.unitValueScore).isGreaterThan(12.5)
+        // 且 <= 25
+        assertThat(score.unitValueScore).isAtMost(25.0)
+    }
 }

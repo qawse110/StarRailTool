@@ -137,4 +137,22 @@ class DamageCalculatorTest {
         val uv = calc.unitValue(seele, enemy)
         assertThat(uv.dotDps).isEqualTo(0.0)
     }
+
+    @Test fun `dotDps increases with EHR boost via effectHitClamp`() {
+        val dotChar = Character(
+            id = "kafka", name = "卡芙卡", rarity = 5,
+            path = Path.NIHILITY, element = Element.LIGHTNING, role = Role.DPS,
+            tags = setOf(Tag.DOT),
+            baseStats = Stats(1000.0, 700.0, 400.0, 120.0),
+            scaling = Scaling(skillMult = 2.0, ultMult = 3.0, talentMult = 1.0,
+                              followUpMult = 0.0, aoeRatio = 0.0, dotMult = 1.5),
+            cycleProfile = null, iconUrl = "", version = 1
+        )
+        val uvNoEhr = calc.unitValue(dotChar, enemy)
+        val uvWithEhr = calc.unitValue(dotChar, enemy, buffs = listOf(
+            StatBoost("ehr_test", 1, StatType.EHR, 0.5)
+        ))
+        // EHR 提升 → dotHitClamp 从 0.7 提升到 (1+0.5-0.3)=1.0 → 更高 DOT
+        assertThat(uvWithEhr.dotDps).isGreaterThan(uvNoEhr.dotDps)
+    }
 }
