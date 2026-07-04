@@ -71,4 +71,20 @@ class BuffEvaluatorTest {
         ))
         assertThat(snap.effectRes).isEqualTo(0.20)
     }
+
+    // B3 + B4: HealingBoost + ShieldBoost accumulation
+    @Test fun `HealingBoost buff accumulates healingBoost`() {
+        val snap = eval.evaluate(listOf(
+            Buff.HealingBoost("h1", 2, 0.20),
+            Buff.HealingBoost("h2", 2, 0.10)
+        ))
+        assertThat(snap.healingBoost).isWithin(1e-6).of(0.30)
+    }
+
+    @Test fun `ShieldBoost buff accumulates shieldBoost`() {
+        val snap = eval.evaluate(listOf(
+            Buff.ShieldBoost("s1", 2, 0.30)
+        ))
+        assertThat(snap.shieldBoost).isEqualTo(0.30)
+    }
 }

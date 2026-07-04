@@ -55,6 +55,20 @@ sealed interface Buff {
         override val sourceId: String,
         override val duration: Int
     ) : Buff
+
+    data class HealingBoost(
+        override val sourceId: String,
+        override val duration: Int,
+        val multiplier: Double,
+        val target: BuffTarget = BuffTarget.SELF
+    ) : Buff
+
+    data class ShieldBoost(
+        override val sourceId: String,
+        override val duration: Int,
+        val multiplier: Double,
+        val target: BuffTarget = BuffTarget.SELF
+    ) : Buff
 }
 
 enum class BuffTarget { SELF, ALLY, TEAM, ENEMY }

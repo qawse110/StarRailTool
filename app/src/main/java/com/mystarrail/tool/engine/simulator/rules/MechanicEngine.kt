@@ -49,6 +49,8 @@ class MechanicEngine(
             is Buff.UltCharge -> buff.copy(duration = newDur)
             is Buff.Dot -> buff.copy(duration = newDur)
             is Buff.Break -> buff.copy(duration = newDur)
+            is Buff.HealingBoost -> buff.copy(duration = newDur)
+            is Buff.ShieldBoost -> buff.copy(duration = newDur)
         }
     }
 }

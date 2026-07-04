@@ -5,6 +5,8 @@ import com.mystarrail.tool.engine.simulator.buffs.Buff.StatBoost
 import com.mystarrail.tool.engine.simulator.buffs.Buff.DamageBonus
 import com.mystarrail.tool.engine.simulator.buffs.Buff.EasyDmg
 import com.mystarrail.tool.engine.simulator.buffs.Buff.SpeedMod
+import com.mystarrail.tool.engine.simulator.buffs.Buff.HealingBoost
+import com.mystarrail.tool.engine.simulator.buffs.Buff.ShieldBoost
 
 class BuffEvaluator {
 
@@ -16,6 +18,8 @@ class BuffEvaluator {
                 is DamageBonus -> snap = snap.copy(damageBonus = snap.damageBonus + b.multiplier)
                 is EasyDmg -> snap = snap.copy(easyDmgTaken = snap.easyDmgTaken + b.multiplier)
                 is SpeedMod -> snap = snap.copy(spdBoost = snap.spdBoost + b.value)
+                is HealingBoost -> snap = snap.copy(healingBoost = snap.healingBoost + b.multiplier)
+                is ShieldBoost -> snap = snap.copy(shieldBoost = snap.shieldBoost + b.multiplier)
                 else -> { }
             }
         }

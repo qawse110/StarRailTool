@@ -114,8 +114,18 @@ class DamageCalculator(
         val ultChargeRate = (skill * 0.1) / max(ult, 1.0)
 
         val supportValue = if (character.role == Role.SUPPORT) (skill + ult) * 0.3 else 0.0
-        val healValue = if (character.tags.contains(Tag.HEAL)) (skill + ult) * 0.2 else 0.0
-        val shieldValue = if (character.tags.contains(Tag.SHIELD)) (skill + ult) * 0.2 else 0.0
+        // B3: baseHealValue scales with healingBoost (1 + boost) * baseHeal
+        val healValue = if (character.tags.contains(Tag.HEAL)) {
+            val baseHeal = character.baseStats.atk
+            val healerBuffs = buffEval.evaluate(allBuffs)
+            baseHeal * (1 + healerBuffs.healingBoost) * 0.5
+        } else 0.0
+        // B4: baseShieldValue scales with shieldBoost (1 + boost) * baseShield
+        val shieldValue = if (character.tags.contains(Tag.SHIELD)) {
+            val baseShield = character.baseStats.def * 0.5
+            val shielderBuffs = buffEval.evaluate(allBuffs)
+            baseShield * (1 + shielderBuffs.shieldBoost)
+        } else 0.0
 
         return CharacterUnitValue(
             expectedSkillDmg = skill,
