@@ -15,7 +15,13 @@ class DotRule : MechanicRule {
         enemies.forEach { enemy ->
             enemy.debuffs.filterIsInstance<Buff.Dot>().forEach { dot ->
                 if (enemy.isDead()) return@forEach
-                val dmg = dot.damageMult * 100
+
+                // 查找 DOT 来源角色以获取 ATK
+                val source = team.firstOrNull { it.charId == dot.sourceId }
+                val sourceAtk = source?.stats?.atk ?: 1000.0
+
+                // 使用来源 ATK 和 DOT 倍率计算伤害
+                val dmg = dot.damageMult * sourceAtk * 0.6
                 enemy.hp -= dmg
                 events.add(RoundEvent(
                     round = events.lastOrNull()?.round ?: 0,
