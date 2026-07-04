@@ -11,6 +11,7 @@ import com.mystarrail.tool.data.model.EnemyType
 import com.mystarrail.tool.data.model.LightCone
 import com.mystarrail.tool.data.model.MainStats
 import com.mystarrail.tool.data.model.PlayerBuild
+import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.ScoringConfig
 import com.mystarrail.tool.data.model.StatType
 import com.mystarrail.tool.data.repository.CharacterRepository
@@ -28,7 +29,8 @@ data class CharacterDetailUiState(
     val selectedCone: LightCone? = null,
     val selectedEidolons: Set<Int> = emptySet(),
     val eidolons: List<Eidolon> = emptyList(),
-    val score: CharacterScore? = null
+    val score: CharacterScore? = null,
+    val relicSets: List<RelicSet> = emptyList()
 )
 
 class CharacterDetailViewModel(
@@ -44,6 +46,7 @@ class CharacterDetailViewModel(
         viewModelScope.launch {
             val char = repository.getCharacter(characterId)
             val cones = repository.observeAllLightCones().first()
+            val relics = repository.observeAllRelicSets().first()
             val eidolons = repository.getEidolonsFor(characterId)
             // 默认选择第一个光锥（强制光锥：UI 必须至少选一个）
             val defaultCone = cones.firstOrNull()
@@ -52,7 +55,8 @@ class CharacterDetailViewModel(
                     character = char,
                     lightCones = cones,
                     selectedCone = defaultCone,
-                    eidolons = eidolons
+                    eidolons = eidolons,
+                    relicSets = relics
                 )
             }
             if (char != null && defaultCone != null) {

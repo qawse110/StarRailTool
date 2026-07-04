@@ -93,7 +93,6 @@ class CharacterDetailViewModelTest {
         val char = sampleChar("seele", "希儿", Element.QUANTUM)
         val cone = sampleCone("in_the_night", "夜色如墨", Path.HUNT, Element.QUANTUM)
         val repo = FakeRepository(chars = listOf(char), cones = listOf(cone))
-
         val vm = CharacterDetailViewModel("seele", repo, scoringEngine)
         advanceUntilIdle()
 
@@ -104,6 +103,32 @@ class CharacterDetailViewModelTest {
         vm.toggleEidolon(1)
         advanceUntilIdle()
         assertThat(vm.state.value.selectedEidolons).isEmpty()
+    }
+
+    @Test fun `init loads relic sets from repository`() = runTest {
+        val repo = FakeRepository(
+            relics = listOf(
+                com.mystarrail.tool.data.model.RelicSet(
+                    id = "quantum_set",
+                    name = "量子套",
+                    twoPiece = com.mystarrail.tool.data.model.PassiveEffect.StatBoost(
+                        stat = com.mystarrail.tool.data.model.StatType.ATK, value = 0.12
+                    ),
+                    fourPiece = com.mystarrail.tool.data.model.PassiveEffect.StatBoost(
+                        stat = com.mystarrail.tool.data.model.StatType.ATK, value = 0.20
+                    ),
+                    suitableFor = setOf(com.mystarrail.tool.data.model.Role.DPS)
+                )
+            )
+        )
+        // 没有 char/cone 触发 recompute，scoringEngine 不会被实际调用
+        val vm = CharacterDetailViewModel(
+            characterId = "test",
+            repository = repo,
+            scoringEngine = scoringEngine
+        )
+        advanceUntilIdle()
+        assertThat(vm.state.value.relicSets).hasSize(1)
     }
 
     private fun sampleChar(

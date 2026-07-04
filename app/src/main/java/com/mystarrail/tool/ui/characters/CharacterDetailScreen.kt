@@ -16,6 +16,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mystarrail.tool.StarRailApp
 import com.mystarrail.tool.ui.characters.components.BaseStatsBlock
+import com.mystarrail.tool.ui.characters.components.EidolonsListBlock
+import com.mystarrail.tool.ui.characters.components.LightConeEffectBlock
+import com.mystarrail.tool.ui.characters.components.RelicRecommendationsBlock
 import com.mystarrail.tool.ui.characters.components.ScalingBlock
 import com.mystarrail.tool.ui.characters.components.TagsBlock
 import com.mystarrail.tool.ui.components.LightConePicker
@@ -109,9 +112,14 @@ fun CharacterDetailScreen(
                     ScoreBar("场景适配", score.scenarioScore, 20.0)
                     ScoreBar("机制完整度", score.mechanicCoverage, 10.0)
                 }
-
                 Spacer(Modifier.height(24.dp))
-
+                // [新增] 星魂介绍 D
+                EidolonsListBlock(eidolons = state.eidolons)
+                // [新增] 光锥效果 E
+                LightConeEffectBlock(cone = state.selectedCone)
+                // [新增] 遗器推荐 F
+                RelicRecommendationsBlock(relics = state.relicSets, characterRole = char.role)
+                Spacer(Modifier.height(24.dp))
                 // 强制光锥
                 Text(
                     "📌 必选光锥",
