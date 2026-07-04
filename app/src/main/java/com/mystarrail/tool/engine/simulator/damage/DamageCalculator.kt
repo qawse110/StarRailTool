@@ -127,12 +127,23 @@ class DamageCalculator(
             baseShield * (1 + shielderBuffs.shieldBoost)
         } else 0.0
 
+        // B1: DOT 期望公式
+        val dotDpsValue = if (character.scaling.dotMult > 0) {
+            val allBuffsSnap = buffEval.evaluate(allBuffs)
+            val dotAtk = character.baseStats.atk * (1 + allBuffsSnap.atkBoost)
+            val dotCritRate = (0.5 + allBuffsSnap.critRateBoost).coerceAtMost(1.0)
+            val dotCritDmg = 1.0 + allBuffsSnap.critDmgBoost
+            val dotCritExpect = 1.0 + dotCritRate * dotCritDmg
+            val dotMul = 1.0 + allBuffsSnap.damageBonus
+            dotAtk * character.scaling.dotMult * dotCritExpect * dotMul * 0.6
+        } else 0.0
+
         return CharacterUnitValue(
             expectedSkillDmg = skill,
             expectedUltDmg = ult,
             expectedTalentDmg = talent,
             expectedFollowUpDmg = followUp,
-            dotDps = 0.0,
+            dotDps = dotDpsValue,
             effectiveActionValue = effectiveAV,
             ultChargeRate = ultChargeRate,
             baseSupportValue = supportValue,

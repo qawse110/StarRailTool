@@ -103,4 +103,24 @@ class DamageCalculatorTest {
         val uv = calc.unitValue(bronya, enemy)
         assertThat(uv.baseSupportValue).isGreaterThan(0.0)
     }
+
+    // B1: DOT wiring
+    @Test fun `dotDps non-zero for character with dotMult`() {
+        val dotChar = Character(
+            id = "kafka", name = "卡芙卡", rarity = 5,
+            path = Path.NIHILITY, element = Element.LIGHTNING, role = Role.DPS,
+            tags = setOf(Tag.DOT),
+            baseStats = Stats(1000.0, 700.0, 400.0, 120.0),
+            scaling = Scaling(skillMult = 2.0, ultMult = 3.0, talentMult = 1.0,
+                              followUpMult = 0.0, aoeRatio = 0.0, dotMult = 1.5),
+            cycleProfile = null, iconUrl = "", version = 1
+        )
+        val uv = calc.unitValue(dotChar, enemy)
+        assertThat(uv.dotDps).isGreaterThan(0.0)
+    }
+
+    @Test fun `dotDps zero for character without dotMult`() {
+        val uv = calc.unitValue(seele, enemy)
+        assertThat(uv.dotDps).isEqualTo(0.0)
+    }
 }

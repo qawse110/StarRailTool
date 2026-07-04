@@ -5,5 +5,6 @@ data class Scaling(
     val ultMult: Double,
     val talentMult: Double,
     val followUpMult: Double = 0.0,
-    val aoeRatio: Double = 0.0
+    val aoeRatio: Double = 0.0,
+    val dotMult: Double = 0.0
 )
