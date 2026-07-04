@@ -48,4 +48,27 @@ class BuffEvaluatorTest {
         assertThat(snap.atkBoost).isEqualTo(0.5)
         assertThat(snap.critRateBoost).isEqualTo(0.3)
     }
+
+    // B2: EHR / BRK_EFF / EFFECT_RES StatBoost coverage
+    @Test fun `EHR StatBoost accumulates effectHitRate`() {
+        val snap = eval.evaluate(listOf(
+            StatBoost("a", 1, StatType.EHR, 0.20),
+            StatBoost("b", 1, StatType.EHR, 0.10)
+        ))
+        assertThat(snap.effectHitRate).isWithin(1e-6).of(0.30)
+    }
+
+    @Test fun `BRK_EFF StatBoost accumulates breakEffect`() {
+        val snap = eval.evaluate(listOf(
+            StatBoost("a", 1, StatType.BRK_EFF, 0.15)
+        ))
+        assertThat(snap.breakEffect).isEqualTo(0.15)
+    }
+
+    @Test fun `EFFECT_RES StatBoost accumulates effectRes`() {
+        val snap = eval.evaluate(listOf(
+            StatBoost("a", 1, StatType.EFFECT_RES, 0.20)
+        ))
+        assertThat(snap.effectRes).isEqualTo(0.20)
+    }
 }

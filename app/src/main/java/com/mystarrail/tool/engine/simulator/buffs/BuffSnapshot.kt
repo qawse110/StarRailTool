@@ -9,7 +9,11 @@ data class BuffSnapshot(
     val critDmgBoost: Double = 0.0,
     val damageBonus: Double = 0.0,
     val easyDmgTaken: Double = 0.0,
-    val defShred: Double = 0.0
+    val defShred: Double = 0.0,
+    // B2 additions
+    val effectHitRate: Double = 0.0,
+    val effectRes: Double = 0.0,
+    val breakEffect: Double = 0.0
 ) {
     operator fun plus(other: BuffSnapshot) = BuffSnapshot(
         atkBoost = atkBoost + other.atkBoost,
@@ -20,6 +24,9 @@ data class BuffSnapshot(
         critDmgBoost = critDmgBoost + other.critDmgBoost,
         damageBonus = damageBonus + other.damageBonus,
         easyDmgTaken = easyDmgTaken + other.easyDmgTaken,
-        defShred = defShred + other.defShred
+        defShred = defShred + other.defShred,
+        effectHitRate = effectHitRate + other.effectHitRate,
+        effectRes = effectRes + other.effectRes,
+        breakEffect = breakEffect + other.breakEffect
     )
 }

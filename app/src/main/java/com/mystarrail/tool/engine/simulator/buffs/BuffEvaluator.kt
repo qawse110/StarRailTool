@@ -29,6 +29,9 @@ class BuffEvaluator {
         StatType.SPD -> snap.copy(spdBoost = snap.spdBoost + b.value)
         StatType.CRIT_RATE -> snap.copy(critRateBoost = snap.critRateBoost + b.value)
         StatType.CRIT_DMG -> snap.copy(critDmgBoost = snap.critDmgBoost + b.value)
+        StatType.EHR -> snap.copy(effectHitRate = snap.effectHitRate + b.value)
+        StatType.BRK_EFF -> snap.copy(breakEffect = snap.breakEffect + b.value)
+        StatType.EFFECT_RES -> snap.copy(effectRes = snap.effectRes + b.value)
         else -> snap
     }
 }
