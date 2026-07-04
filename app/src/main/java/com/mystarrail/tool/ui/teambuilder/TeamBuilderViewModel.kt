@@ -10,7 +10,6 @@ import com.mystarrail.tool.data.repository.CharacterRepository
 import com.mystarrail.tool.engine.simulator.ScoringEngine
 import com.mystarrail.tool.engine.simulator.sim.SimulationResult
 import com.mystarrail.tool.engine.simulator.sim.toCombatant
-import com.mystarrail.tool.util.ServiceLocator
 import com.mystarrail.tool.util.SimulationResultStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -112,7 +111,7 @@ class TeamBuilderViewModel(
             hp = 200_000.0,
             toughness = 240.0
         )
-        // 用 scoringEngine 内部 sim 跑 — 不依赖 ServiceLocator
+        // 用 DamageCalculator 接通的 DES 跑真实伤害模拟
         return com.mystarrail.tool.engine.simulator.sim.DiscreteEventSimulator(
             com.mystarrail.tool.engine.simulator.damage.DamageCalculator(
                 com.mystarrail.tool.engine.simulator.tables.FormulaTables()

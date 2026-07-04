@@ -79,20 +79,68 @@ fun TeamBuilderScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // 上次结果
+        // 上次结果（增强版）
         if (state.lastResult != null) {
+            val result = state.lastResult!!
+            val totalDmg = result.damageBreakdown.total
+
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(
-                        "总伤害: ${"%.0f".format(state.lastTotalDmg)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text("动作数: ${state.lastResult!!.actions.values.sum()}", style = MaterialTheme.typography.bodySmall)
-                    Text("大招数: ${state.lastResult!!.ultsCast.values.sum()}", style = MaterialTheme.typography.bodySmall)
+                    // 汇总
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        StatItem2("总伤害", "${"%.0f".format(totalDmg)}")
+                        StatItem2("行动", "${result.actions.values.sum()}")
+                        StatItem2("终结技", "${result.ultsCast.values.sum()}")
+                        StatItem2("击杀回合", result.roundsToKill?.toString() ?: "未击杀")
+                    }
+
                     Spacer(Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(8.dp))
+
+                    // 伤害构成
+                    Text("伤害构成", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        DmgLabel("战技", result.damageBreakdown.skillDmg, totalDmg)
+                        DmgLabel("终结技", result.damageBreakdown.ultDmg, totalDmg)
+                        DmgLabel("追击", result.damageBreakdown.followUpDmg, totalDmg)
+                        DmgLabel("DOT", result.damageBreakdown.dotDmg, totalDmg)
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // 角色贡献
+                    Text("角色贡献", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    result.totalDamage.entries.sortedByDescending { it.value }.forEach { (charId, dmg) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(charId, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                            Text(
+                                "${"%.0f".format(dmg)} (${if (totalDmg > 0) (dmg / totalDmg * 100).toInt() else 0}%)",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "行动:${result.actions[charId] ?: 0} 大招:${result.ultsCast[charId] ?: 0}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(4.dp))
                     TextButton(onClick = onShowBattleLog) {
-                        Text("📜 查看战斗日志")
+                        Text("📜 查看详细战斗日志")
                     }
                 }
             }
@@ -102,7 +150,10 @@ fun TeamBuilderScreen(
         // 角色库列表（可点选）
         Text("角色库（点选 4 个）", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(8.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             items(state.allChars, key = { it.id }) { c ->
                 CharSelectRow(
                     c = c,
@@ -111,6 +162,26 @@ fun TeamBuilderScreen(
                     onClick = { viewModel.toggleChar(c.id) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun StatItem2(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun DmgLabel(label: String, value: Double, total: Double) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("${"%.0f".format(value)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (total > 0) {
+            Text("${(value / total * 100).toInt()}%", style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary)
         }
     }
 }
