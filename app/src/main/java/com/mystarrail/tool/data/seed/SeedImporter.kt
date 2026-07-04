@@ -53,14 +53,15 @@ class SeedImporter(
                     db.scenarioDao().insertAll(parsed.scenarios.map(ScenarioEntity::fromModel))
                     db.eidolonDao().insertAll(parsed.eidolons.map(EidolonEntity::fromModel))
                 }
-                Log.i(TAG, "Seed imported: ${parsed.characters.size} chars / ${parsed.lightCones.size} cones / ${parsed.relicSets.size} relics / ${parsed.enemies.size} enemies / ${parsed.scenarios.size} scenarios / ${parsed.eidolons.size} eidolons")
+                Log.i(TAG, "Seed imported: ${parsed.characters.size} chars / ${parsed.lightCones.size} cones / ${parsed.relicSets.size} relics / ${parsed.enemies.size} enemies / ${parsed.scenarios.size} scenarios / ${parsed.eidolons.size} eidolons / ${parsed.skillTrees.size} skillTrees")
                 ImportResult.Success(
                     characters = parsed.characters.size,
                     lightCones = parsed.lightCones.size,
                     relicSets = parsed.relicSets.size,
                     enemies = parsed.enemies.size,
                     scenarios = parsed.scenarios.size,
-                    eidolons = parsed.eidolons.size
+                    eidolons = parsed.eidolons.size,
+                    skillTrees = parsed.skillTrees.size
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "DB write failed", e)
@@ -71,7 +72,8 @@ class SeedImporter(
     sealed interface ImportResult {
         data class Success(
             val characters: Int, val lightCones: Int, val relicSets: Int,
-            val enemies: Int, val scenarios: Int, val eidolons: Int
+            val enemies: Int, val scenarios: Int, val eidolons: Int,
+            val skillTrees: Int = 0
         ) : ImportResult
         data class Failed(val reason: String) : ImportResult
     }

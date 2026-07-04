@@ -203,5 +203,6 @@
     { "id": "jingyuan_e4", "characterId": "jingyuan", "level": 4, "name": "雷鸣", "effect": { "type": "StatBoost", "stat": "CRIT_RATE", "value": 0.12, "target": "SELF" }, "major": false },
     { "id": "jingyuan_e5", "characterId": "jingyuan", "level": 5, "name": "天雷", "effect": { "type": "SkillBoost", "skillType": "SKILL", "multiplier": 0.2 }, "major": false },
     { "id": "jingyuan_e6", "characterId": "jingyuan", "level": 6, "name": "终末", "effect": { "type": "NewMechanic", "mechanic": "FOLLOW_UP", "param": 1.0, "note": "神君层数上限 +6" }, "major": true }
-  ]
+  ],
+  "skillTrees": []
 }

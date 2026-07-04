@@ -11,7 +11,8 @@ data class SeedRoot(
     val relicSets: List<SeedRelicSet>,
     val enemies: List<SeedEnemy>,
     val scenarios: List<SeedScenario>,
-    val eidolons: List<SeedEidolon>
+    val eidolons: List<SeedEidolon>,
+    val skillTrees: List<SeedSkillTree> = emptyList()
 )
 
 @Serializable
@@ -108,4 +109,21 @@ data class SeedEidolonEffect(
     val condition: String? = null,
     val skillType: String? = null,
     val effects: List<SeedEidolonEffect> = emptyList()
+)
+
+@Serializable
+data class SeedSkillTree(
+    val characterId: String,
+    val nodes: List<SeedSkillTreeNode> = emptyList()
+)
+
+@Serializable
+data class SeedSkillTreeNode(
+    val id: String,
+    val name: String,
+    val desc: String,
+    val maxLevel: Int = 1,
+    val skillType: String? = null,
+    val effectType: String? = null,
+    val paramList: List<List<Double>> = emptyList()
 )

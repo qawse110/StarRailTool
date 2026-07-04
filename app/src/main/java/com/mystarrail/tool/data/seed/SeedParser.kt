@@ -15,6 +15,7 @@ import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.Scaling
 import com.mystarrail.tool.data.model.Scenario
+import com.mystarrail.tool.data.model.SkillTree
 import com.mystarrail.tool.data.model.SkillType
 import com.mystarrail.tool.data.model.Stats
 import com.mystarrail.tool.data.model.StatType
@@ -40,7 +41,8 @@ object SeedParser {
             val relicSets: List<RelicSet>,
             val enemies: List<Enemy>,
             val scenarios: List<Scenario>,
-            val eidolons: List<Eidolon>
+            val eidolons: List<Eidolon>,
+            val skillTrees: List<SkillTree> = emptyList()
         ) : ParseResult
 
         data class Failed(val reason: String, val cause: Throwable? = null) : ParseResult

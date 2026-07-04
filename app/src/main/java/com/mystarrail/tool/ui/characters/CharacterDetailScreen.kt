@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mystarrail.tool.StarRailApp
+import com.mystarrail.tool.ui.characters.components.BaseStatsBlock
+import com.mystarrail.tool.ui.characters.components.ScalingBlock
+import com.mystarrail.tool.ui.characters.components.TagsBlock
 import com.mystarrail.tool.ui.components.LightConePicker
 import com.mystarrail.tool.ui.components.ScoreRing
 import com.mystarrail.tool.ui.components.TierBadge
@@ -70,6 +73,17 @@ fun CharacterDetailScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(Modifier.height(24.dp))
+
+                // 基础数值 A
+                BaseStatsBlock(stats = char.baseStats)
+
+                // 技能倍率 B
+                ScalingBlock(scaling = char.scaling)
+
+                // 标签 C
+                TagsBlock(tags = char.tags)
 
                 Spacer(Modifier.height(24.dp))
 

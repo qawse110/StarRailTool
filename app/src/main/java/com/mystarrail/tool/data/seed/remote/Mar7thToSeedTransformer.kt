@@ -107,7 +107,8 @@ object Mar7thToSeedTransformer {
             relicSets = outSets,
             enemies = emptyList(),
             scenarios = emptyList(),
-            eidolons = outEidolons
+            eidolons = outEidolons,
+            skillTrees = emptyList()  // commit 3 will populate
         )
     }
 
