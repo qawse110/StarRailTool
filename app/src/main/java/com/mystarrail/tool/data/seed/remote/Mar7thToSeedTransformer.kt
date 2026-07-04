@@ -11,6 +11,8 @@ import com.mystarrail.tool.data.model.Path
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.Scaling
+import com.mystarrail.tool.data.model.SkillTree
+import com.mystarrail.tool.data.model.SkillTreeNode
 import com.mystarrail.tool.data.model.SkillType
 import com.mystarrail.tool.data.model.Stats
 import com.mystarrail.tool.data.model.StatType
@@ -87,6 +89,7 @@ object Mar7thToSeedTransformer {
         val conePromos = files[RemoteSeedSource.File.LIGHT_CONE_PROMOTIONS]?.jsonObject ?: JsonObject(emptyMap())
         val coneRanks = files[RemoteSeedSource.File.LIGHT_CONE_RANKS]?.jsonObject ?: JsonObject(emptyMap())
         val relicSets = files[RemoteSeedSource.File.RELIC_SETS]?.jsonObject ?: JsonObject(emptyMap())
+        val skillTreesFile = files[RemoteSeedSource.File.SKILL_TREES]?.jsonObject ?: JsonObject(emptyMap())
 
         val outChars = characters.values.mapNotNull { el ->
             runCatching { el.toCharacter(promotions, skills) }.getOrNull()
@@ -100,6 +103,7 @@ object Mar7thToSeedTransformer {
         val outEidolons = outChars.flatMap { ch ->
             transformEidolonsFor(ch, characters, ranks)
         }
+        val outSkillTrees = transformSkillTrees(characters, skillTreesFile)
 
         return SeedParser.ParseResult.Success(
             characters = outChars,
@@ -108,7 +112,7 @@ object Mar7thToSeedTransformer {
             enemies = emptyList(),
             scenarios = emptyList(),
             eidolons = outEidolons,
-            skillTrees = emptyList()  // commit 3 will populate
+            skillTrees = outSkillTrees
         )
     }
 
@@ -133,6 +137,40 @@ object Mar7thToSeedTransformer {
                     effect = node.toEidolonEffect(),
                     major = level.let { it % 2 == 0 && it > 0 }
                 )
+            }.getOrNull()
+        }
+    }
+
+    private fun transformSkillTrees(
+        charactersFile: JsonObject,
+        skillTreesFile: JsonObject
+    ): List<SkillTree> {
+        return charactersFile.values.mapNotNull { charEl ->
+            runCatching {
+                val obj = charEl.jsonObject
+                val rawId = obj.str("id") ?: return@mapNotNull null
+                val nodeIds = obj.strArray("skill_trees")
+                if (nodeIds.isEmpty()) return@mapNotNull null
+                val nodes = nodeIds.mapNotNull { nid ->
+                    skillTreesFile[nid]?.jsonObject?.let { stNode ->
+                        SkillTreeNode(
+                            id = nid,
+                            name = stNode.str("name").orEmpty(),
+                            desc = stNode.str("desc").orEmpty(),
+                            maxLevel = stNode.int("maxLevel") ?: 1,
+                            skillType = stNode.str("skillType")?.let { st ->
+                                runCatching { SkillType.valueOf(st) }.getOrNull()
+                            },
+                            effectType = stNode.str("effectType"),
+                            paramList = stNode["paramList"]?.jsonArray?.mapNotNull { rowEl ->
+                                runCatching {
+                                    rowEl.jsonArray.mapNotNull { runCatching { it.jsonPrimitive.double }.getOrNull() }
+                                }.getOrNull()
+                            } ?: emptyList()
+                        )
+                    }
+                }
+                SkillTree(characterId = "mar7th_$rawId", nodes = nodes)
             }.getOrNull()
         }
     }

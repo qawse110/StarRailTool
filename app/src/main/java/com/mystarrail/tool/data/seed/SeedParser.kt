@@ -16,6 +16,7 @@ import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.Scaling
 import com.mystarrail.tool.data.model.Scenario
 import com.mystarrail.tool.data.model.SkillTree
+import com.mystarrail.tool.data.model.SkillTreeNode
 import com.mystarrail.tool.data.model.SkillType
 import com.mystarrail.tool.data.model.Stats
 import com.mystarrail.tool.data.model.StatType
@@ -56,7 +57,8 @@ object SeedParser {
             relicSets = root.relicSets.map { it.toModel() },
             enemies = root.enemies.map { it.toModel() },
             scenarios = root.scenarios.map { it.toModel() },
-            eidolons = root.eidolons.map { it.toModel() }
+            eidolons = root.eidolons.map { it.toModel() },
+            skillTrees = root.skillTrees.map { it.toModel() }
         )
     } catch (e: SerializationException) {
         ParseResult.Failed("JSON parse error: ${e.message}", e)
@@ -158,4 +160,16 @@ object SeedParser {
         "Composite" -> EidolonEffect.Composite(effects.map { it.toModel() })
         else -> error("Unknown EidolonEffect type: $type")
     }
+
+    private fun SeedSkillTree.toModel(): SkillTree = SkillTree(
+        characterId = characterId,
+        nodes = nodes.map { it.toModel() }
+    )
+
+    private fun SeedSkillTreeNode.toModel(): SkillTreeNode = SkillTreeNode(
+        id = id, name = name, desc = desc, maxLevel = maxLevel,
+        skillType = skillType?.let { runCatching { SkillType.valueOf(it) }.getOrNull() },
+        effectType = effectType,
+        paramList = paramList
+    )
 }

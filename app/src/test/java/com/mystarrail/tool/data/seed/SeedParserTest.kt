@@ -165,5 +165,6 @@ class SeedParserTest {
         assertThat(result.enemies).hasSize(10)
         assertThat(result.scenarios).hasSize(3)
         assertThat(result.eidolons).hasSize(30)
+        assertThat(result.skillTrees).isEmpty()  // assets v1 ships empty; commit 3+ has data via remote
     }
 }

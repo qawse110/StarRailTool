@@ -11,6 +11,7 @@ import com.mystarrail.tool.data.model.LightCone
 import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Scenario
+import com.mystarrail.tool.data.model.SkillTree
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -62,6 +63,15 @@ class RoomCharacterRepository(private val db: AppDatabase) : CharacterRepository
         db.eidolonDao().getForCharacter(characterId).map { entity ->
             entity.toModel(EidolonEffectJson.decode(entity.effectJson))
         }
+
+    override suspend fun getSkillTreeFor(characterId: String): SkillTree? {
+        val entities = db.skillTreeDao().getForCharacter(characterId)
+        if (entities.isEmpty()) return null
+        return SkillTree(
+            characterId = characterId,
+            nodes = entities.sortedBy { it.position }.map { it.toModel() }
+        )
+    }
 
     // --- M10 玩家面板 ---
     override fun observeAllPlayerBuilds() =

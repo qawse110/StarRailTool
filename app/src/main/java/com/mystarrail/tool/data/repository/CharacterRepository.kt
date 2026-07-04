@@ -7,6 +7,7 @@ import com.mystarrail.tool.data.model.LightCone
 import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Scenario
+import com.mystarrail.tool.data.model.SkillTree
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -30,6 +31,8 @@ interface CharacterRepository {
     fun observeAllScenarios(): Flow<List<Scenario>>
 
     suspend fun getEidolonsFor(characterId: String): List<Eidolon>
+
+    suspend fun getSkillTreeFor(characterId: String): SkillTree?
 
     // --- M10 玩家面板 ---
     fun observeAllPlayerBuilds(): Flow<List<PlayerBuild>>

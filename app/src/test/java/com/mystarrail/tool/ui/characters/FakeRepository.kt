@@ -7,6 +7,7 @@ import com.mystarrail.tool.data.model.LightCone
 import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Scenario
+import com.mystarrail.tool.data.model.SkillTree
 import com.mystarrail.tool.data.repository.CharacterRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +43,7 @@ class FakeRepository(
     override fun observeAllEnemies(): Flow<List<Enemy>> = enemyFlow.asStateFlow()
     override fun observeAllScenarios(): Flow<List<Scenario>> = scenarioFlow.asStateFlow()
     override suspend fun getEidolonsFor(characterId: String): List<Eidolon> = emptyList()
+    override suspend fun getSkillTreeFor(characterId: String): SkillTree? = null
 
     // --- M10 玩家面板 ---
     override fun observeAllPlayerBuilds(): Flow<List<PlayerBuild>> = buildFlow.asStateFlow()

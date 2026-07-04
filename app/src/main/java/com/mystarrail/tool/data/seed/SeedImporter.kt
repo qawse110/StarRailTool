@@ -10,6 +10,7 @@ import com.mystarrail.tool.data.local.EnemyEntity
 import com.mystarrail.tool.data.local.LightConeEntity
 import com.mystarrail.tool.data.local.RelicSetEntity
 import com.mystarrail.tool.data.local.ScenarioEntity
+import com.mystarrail.tool.data.local.SkillTreeNodeEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -52,6 +53,10 @@ class SeedImporter(
                     db.enemyDao().insertAll(parsed.enemies.map(EnemyEntity::fromModel))
                     db.scenarioDao().insertAll(parsed.scenarios.map(ScenarioEntity::fromModel))
                     db.eidolonDao().insertAll(parsed.eidolons.map(EidolonEntity::fromModel))
+                    val skillTreeNodes = parsed.skillTrees.flatMap { st ->
+                        st.nodes.mapIndexed { idx, node -> SkillTreeNodeEntity.fromModel(st.characterId, node, idx) }
+                    }
+                    db.skillTreeDao().insertAll(skillTreeNodes)
                 }
                 Log.i(TAG, "Seed imported: ${parsed.characters.size} chars / ${parsed.lightCones.size} cones / ${parsed.relicSets.size} relics / ${parsed.enemies.size} enemies / ${parsed.scenarios.size} scenarios / ${parsed.eidolons.size} eidolons / ${parsed.skillTrees.size} skillTrees")
                 ImportResult.Success(

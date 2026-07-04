@@ -13,6 +13,7 @@ import com.mystarrail.tool.data.model.MainStats
 import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.ScoringConfig
+import com.mystarrail.tool.data.model.SkillTree
 import com.mystarrail.tool.data.model.StatType
 import com.mystarrail.tool.data.repository.CharacterRepository
 import com.mystarrail.tool.engine.simulator.ScoringEngine
@@ -30,7 +31,8 @@ data class CharacterDetailUiState(
     val selectedEidolons: Set<Int> = emptySet(),
     val eidolons: List<Eidolon> = emptyList(),
     val score: CharacterScore? = null,
-    val relicSets: List<RelicSet> = emptyList()
+    val relicSets: List<RelicSet> = emptyList(),
+    val skillTree: SkillTree? = null
 )
 
 class CharacterDetailViewModel(
@@ -48,6 +50,7 @@ class CharacterDetailViewModel(
             val cones = repository.observeAllLightCones().first()
             val relics = repository.observeAllRelicSets().first()
             val eidolons = repository.getEidolonsFor(characterId)
+            val skillTree = repository.getSkillTreeFor(characterId)
             // 默认选择第一个光锥（强制光锥：UI 必须至少选一个）
             val defaultCone = cones.firstOrNull()
             _state.update {
@@ -56,7 +59,8 @@ class CharacterDetailViewModel(
                     lightCones = cones,
                     selectedCone = defaultCone,
                     eidolons = eidolons,
-                    relicSets = relics
+                    relicSets = relics,
+                    skillTree = skillTree
                 )
             }
             if (char != null && defaultCone != null) {

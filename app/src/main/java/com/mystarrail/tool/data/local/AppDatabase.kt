@@ -14,9 +14,10 @@ import androidx.room.TypeConverters
         EnemyEntity::class,
         ScenarioEntity::class,
         EidolonEntity::class,
-        PlayerBuildEntity::class
+        PlayerBuildEntity::class,
+        SkillTreeNodeEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -28,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun scenarioDao(): ScenarioDao
     abstract fun eidolonDao(): EidolonDao
     abstract fun playerBuildDao(): PlayerBuildDao
+    abstract fun skillTreeDao(): SkillTreeDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
@@ -37,7 +39,10 @@ abstract class AppDatabase : RoomDatabase() {
                 context.applicationContext,
                 AppDatabase::class.java,
                 "starrail.db"
-            ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
+            )
+                .addMigrations(MIGRATION_1_2)
+                .fallbackToDestructiveMigration()
+                .build().also { INSTANCE = it }
         }
     }
 }

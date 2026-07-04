@@ -37,7 +37,8 @@ class RemoteSeedSource(
         CHARACTER_RANKS("character_ranks.json"),
         LIGHT_CONE_PROMOTIONS("light_cone_promotions.json"),
         LIGHT_CONE_RANKS("light_cone_ranks.json"),
-        RELIC_SETS("relic_sets.json")
+        RELIC_SETS("relic_sets.json"),
+        SKILL_TREES("character_skill_trees.json")
     }
 
     data class FetchResult(
@@ -87,12 +88,12 @@ class RemoteSeedSource(
         const val DEFAULT_BASE_URL =
             "https://raw.githubusercontent.com/Mar-7th/StarRailRes/master/index_new/cn"
 
-        /** 角色/光锥/遗器/星魂全套共 10 个文件。transformer 需全部。 */
+        /** 角色/光锥/遗器/星魂/技能树全套共 11 个文件。transformer 需全部。 */
         val CORE_FILES: Set<File> = setOf(
             File.CHARACTERS, File.PATHS, File.ELEMENTS,
             File.LIGHT_CONES, File.CHARACTER_PROMOTIONS, File.CHARACTER_SKILLS,
             File.CHARACTER_RANKS, File.LIGHT_CONE_PROMOTIONS, File.LIGHT_CONE_RANKS,
-            File.RELIC_SETS
+            File.RELIC_SETS, File.SKILL_TREES
         )
 
         private fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
