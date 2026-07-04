@@ -15,8 +15,8 @@ import com.mystarrail.tool.engine.simulator.tables.FormulaTables
 import kotlin.math.max
 
 class DamageCalculator(
-    private val tables: FormulaTables,
-    private val buffEval: BuffEvaluator = BuffEvaluator()
+    val tables: FormulaTables,
+    val buffEval: BuffEvaluator = BuffEvaluator()
 ) {
     /**
      * 单次行动伤害期望（确定性，无随机）
