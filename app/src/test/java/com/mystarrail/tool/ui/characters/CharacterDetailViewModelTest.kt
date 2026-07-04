@@ -150,6 +150,31 @@ class CharacterDetailViewModelTest {
         version = 1
     )
 
+    @Test fun `DPS char has zero utilityScore, HEAL char has positive utilityScore`() = runTest {
+        // DPS char 没有 HEAL/SHIELD tag → utilityScore=0
+        val dpsChar = sampleChar("dps", "DPS", Element.PHYSICAL)
+        // HEAL char 有 Tag.HEAL → baseHealValue > 0 → utilityScore > 0
+        val healChar = sampleChar("heal", "Healer", Element.PHYSICAL).copy(
+            tags = setOf(Tag.HEAL)
+        )
+        val cone = sampleCone("c", "C", Path.HUNT, Element.PHYSICAL)
+        val dpsRepo = FakeRepository(chars = listOf(dpsChar), cones = listOf(cone))
+        val healRepo = FakeRepository(chars = listOf(healChar), cones = listOf(cone))
+
+        val dpsVm = CharacterDetailViewModel("dps", dpsRepo, scoringEngine)
+        val healVm = CharacterDetailViewModel("heal", healRepo, scoringEngine)
+        advanceUntilIdle()
+
+        val dpsScore = dpsVm.state.value.score!!
+        val healScore = healVm.state.value.score!!
+
+        // DPS 没 HEAL tag → utilityScore = 0
+        assertThat(dpsScore.utilityScore).isEqualTo(0.0)
+        // HEAL 角色 utilityScore > 0
+        assertThat(healScore.utilityScore).isGreaterThan(0.0)
+        assertThat(healScore.utilityScore).isAtMost(10.0)
+    }
+
     @Test fun `recompute passes skill tree to scoring engine without crash`() = runTest {
         // 验证 viewmodel recompute 链路包含 skillTree 字段
         // （FakeRepository.getSkillTreeFor 返回 null，是最简路径）
