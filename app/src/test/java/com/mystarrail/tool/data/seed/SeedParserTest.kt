@@ -87,6 +87,7 @@ class SeedParserTest {
         assertThat(result.enemies).hasSize(1)
         assertThat(result.scenarios).hasSize(1)
         assertThat(result.eidolons).hasSize(1)
+        assertThat(result.skillTrees).isEmpty()  // assets v1 ships empty; remote path adds data
     }
 
     @Test

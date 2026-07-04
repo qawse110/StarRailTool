@@ -236,6 +236,94 @@ class Mar7thToSeedTransformerTest {
         assertThat(result.characters.first().element).isEqualTo(Element.PHYSICAL)
     }
 
+    // ===== Skill Tree tests (added in Task 3) =====
+
+    @Test
+    fun `transforms skill trees when character references nodes`() {
+        val charactersWithSkillTrees = """
+            {
+              "1001": {
+                "id": "1001",
+                "name": "Seele",
+                "rarity": 5,
+                "path": "Hunt",
+                "element": "Quantum",
+                "skills": [],
+                "ranks": [],
+                "skill_trees": ["1001011", "1001012"]
+              }
+            }
+        """.trimIndent()
+        val skillTreesJson = """
+            {
+              "1001011": {
+                "id": "1001011",
+                "name": "Resurgence",
+                "desc": "CRIT Rate +8%",
+                "maxLevel": 10,
+                "skillType": "Skill",
+                "effectType": "CRITRateAdd",
+                "paramList": [[0.04], [0.08]]
+              },
+              "1001012": {
+                "id": "1001012",
+                "name": "Blade Dance",
+                "desc": "ATK +10%",
+                "maxLevel": 1,
+                "paramList": [[0.10]]
+              }
+            }
+        """.trimIndent()
+        val files = buildFiles() + mapOf(
+            RemoteSeedSource.File.CHARACTERS to parse(charactersWithSkillTrees),
+            RemoteSeedSource.File.SKILL_TREES to parse(skillTreesJson)
+        )
+        val result = Mar7thToSeedTransformer.transform(files)
+        assertThat(result.skillTrees).hasSize(1)
+        val tree = result.skillTrees.first()
+        assertThat(tree.characterId).isEqualTo("mar7th_1001")
+        assertThat(tree.nodes).hasSize(2)
+        assertThat(tree.nodes[0].name).isEqualTo("Resurgence")
+        assertThat(tree.nodes[0].maxLevel).isEqualTo(10)
+        assertThat(tree.nodes[0].paramList).hasSize(2)
+    }
+
+    @Test
+    fun `returns empty skill trees when character lacks skill_trees field`() {
+        val result = Mar7thToSeedTransformer.transform(buildFiles())
+        assertThat(result.skillTrees).isEmpty()
+    }
+
+    @Test
+    fun `skips skill tree node if id missing in skill_trees file`() {
+        val charJson = """
+            {
+              "1001": {
+                "id": "1001",
+                "name": "Seele",
+                "rarity": 5,
+                "path": "Hunt",
+                "element": "Quantum",
+                "skills": [],
+                "ranks": [],
+                "skill_trees": ["missing_id"]
+              }
+            }
+        """.trimIndent()
+        val files = buildFiles() + mapOf(
+            RemoteSeedSource.File.CHARACTERS to parse(charJson),
+            RemoteSeedSource.File.SKILL_TREES to parse("{}")
+        )
+        val result = Mar7thToSeedTransformer.transform(files)
+        assertThat(result.skillTrees).hasSize(1)
+        assertThat(result.skillTrees.first().nodes).isEmpty()
+    }
+
+    @Test
+    fun `CORE_FILES includes skill trees`() {
+        assertThat(RemoteSeedSource.CORE_FILES).contains(RemoteSeedSource.File.SKILL_TREES)
+    }
+
     // ===== 关键词推断 (KeywordMatcher) 测试 =====
     // 直接测 KeywordMatcher（绕过 JsonObject.toEidolonEffect 的 receiver 复杂性）
 
@@ -336,69 +424,7 @@ class Mar7thToSeedTransformerTest {
         )
     }
 
-    // ===== Skill tree transformer (commit 3) =====
-
-    @Test
-    fun `transforms skill trees when character references nodes`() {
-        val charactersWithSkillTrees = """
-            {
-              "1001": {
-                "id": "1001", "name": "Seele", "rarity": 5,
-                "path": "Hunt", "element": "Quantum",
-                "skills": [], "ranks": [],
-                "skill_trees": ["1001011", "1001012"]
-              }
-            }
-        """.trimIndent()
-        val skillTreesJson = """
-            {
-              "1001011": { "id": "1001011", "name": "Resurgence",
-                           "desc": "CRIT Rate +8%", "maxLevel": 10,
-                           "skillType": "Skill", "effectType": "CRITRateAdd",
-                           "paramList": [[0.04], [0.08]] },
-              "1001012": { "id": "1001012", "name": "Blade Dance",
-                           "desc": "ATK +10%", "maxLevel": 1,
-                           "paramList": [[0.10]] }
-            }
-        """.trimIndent()
-        val files = buildFiles() + mapOf(
-            RemoteSeedSource.File.CHARACTERS to parse(charactersWithSkillTrees),
-            RemoteSeedSource.File.SKILL_TREES to parse(skillTreesJson)
-        )
-        val result = Mar7thToSeedTransformer.transform(files)
-        assertThat(result.skillTrees).hasSize(1)
-        val tree = result.skillTrees.first()
-        assertThat(tree.characterId).isEqualTo("mar7th_1001")
-        assertThat(tree.nodes).hasSize(2)
-        assertThat(tree.nodes[0].name).isEqualTo("Resurgence")
-        assertThat(tree.nodes[0].maxLevel).isEqualTo(10)
-    }
-
-    @Test
-    fun `returns empty skill trees when character lacks skill_trees field`() {
-        val result = Mar7thToSeedTransformer.transform(buildFiles())
-        assertThat(result.skillTrees).isEmpty()
-    }
-
-    @Test
-    fun `skips skill tree node if id missing in skill_trees file`() {
-        val charJson = """
-            { "1001": { "id": "1001", "name": "Seele", "rarity": 5,
-                        "path": "Hunt", "element": "Quantum",
-                        "skills": [], "ranks": [],
-                        "skill_trees": ["missing_id"] } }
-        """.trimIndent()
-        val files = buildFiles() + mapOf(
-            RemoteSeedSource.File.CHARACTERS to parse(charJson),
-            RemoteSeedSource.File.SKILL_TREES to parse("{}")
-        )
-        val result = Mar7thToSeedTransformer.transform(files)
-        assertThat(result.skillTrees).hasSize(1)
-        assertThat(result.skillTrees.first().nodes).isEmpty()
-    }
-
-    @Test
-    fun `CORE_FILES includes skill trees`() {
-        assertThat(RemoteSeedSource.CORE_FILES).contains(RemoteSeedSource.File.SKILL_TREES)
-    }
+    // ===== 关键词推断 (KeywordMatcher) 测试 =====
+    // 直接测 KeywordMatcher（绕过 JsonObject.toEidolonEffect 的 receiver 复杂性）
 }
+
