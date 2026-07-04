@@ -5,6 +5,7 @@ import com.mystarrail.tool.data.model.CharacterScore
 import com.mystarrail.tool.data.model.Enemy
 import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.ScoringConfig
+import com.mystarrail.tool.data.model.SkillTree
 import com.mystarrail.tool.data.model.Tier
 import com.mystarrail.tool.engine.simulator.damage.CharacterUnitValue
 import com.mystarrail.tool.engine.simulator.damage.DamageCalculator
@@ -28,12 +29,13 @@ class ScoringEngine(
         character: Character,
         config: ScoringConfig,
         allCharacters: List<Character>,
-        defaultEnemy: Enemy
+        defaultEnemy: Enemy,
+        skillTree: SkillTree? = null
     ): CharacterScore {
         val targetEnemy = config.enemy ?: defaultEnemy
 
-        val uv = damageCalc.unitValue(character, targetEnemy)
-        val allUV = allCharacters.map { damageCalc.unitValue(it, targetEnemy) }
+        val uv = damageCalc.unitValue(character, targetEnemy, skillTree = skillTree)
+        val allUV = allCharacters.map { damageCalc.unitValue(it, targetEnemy, skillTree = skillTree) }
         val unitScore = normalizeRole(uv, character.role, allUV) * 25.0
 
         val cycleScore = cycleScore(character) * 5.0

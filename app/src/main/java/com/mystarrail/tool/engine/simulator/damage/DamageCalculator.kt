@@ -5,7 +5,9 @@ import com.mystarrail.tool.data.model.Enemy
 import com.mystarrail.tool.data.model.EnemyType
 import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.Scaling
+import com.mystarrail.tool.data.model.SkillTree
 import com.mystarrail.tool.data.model.Tag
+import com.mystarrail.tool.engine.simulator.SkillTreeEffectParser
 import com.mystarrail.tool.engine.simulator.buffs.Buff
 import com.mystarrail.tool.engine.simulator.buffs.BuffEvaluator
 import com.mystarrail.tool.engine.simulator.sim.ActionType
@@ -72,13 +74,38 @@ class DamageCalculator(
     fun unitValue(
         character: Character,
         enemy: Enemy,
-        buffs: List<Buff> = emptyList()
+        buffs: List<Buff> = emptyList(),
+        skillTree: SkillTree? = null
     ): CharacterUnitValue {
-        val skill = expectedDamage(character, ActionType.SKILL, enemy, buffs = buffs)
-        val ult = expectedDamage(character, ActionType.ULT, enemy, buffs = buffs)
-        val talent = expectedDamage(character, ActionType.TALENT, enemy, buffs = buffs)
+        // 行迹 → Buff 翻译
+        val skillTreeBuffs: List<Buff> = skillTree?.let { st ->
+            val effects = SkillTreeEffectParser.parse(st)
+            val statBuffs = effects.statBoosts.map { (stat, value) ->
+                Buff.StatBoost(
+                    sourceId = "skilltree_${stat.name}",
+                    duration = 999,
+                    stat = stat,
+                    value = value
+                )
+            }
+            val dmgBuff = if (effects.damageBonus > 0.0) {
+                listOf(
+                    Buff.DamageBonus(
+                        sourceId = "skilltree_dmg",
+                        duration = 999,
+                        multiplier = effects.damageBonus
+                    )
+                )
+            } else emptyList()
+            statBuffs + dmgBuff
+        } ?: emptyList()
+        val allBuffs = buffs + skillTreeBuffs
+
+        val skill = expectedDamage(character, ActionType.SKILL, enemy, buffs = allBuffs)
+        val ult = expectedDamage(character, ActionType.ULT, enemy, buffs = allBuffs)
+        val talent = expectedDamage(character, ActionType.TALENT, enemy, buffs = allBuffs)
         val followUp = if (character.scaling.followUpMult > 0)
-            expectedDamage(character, ActionType.FOLLOW_UP, enemy, buffs = buffs) else 0.0
+            expectedDamage(character, ActionType.FOLLOW_UP, enemy, buffs = allBuffs) else 0.0
 
         val spd = character.baseStats.spd
         val actionValue = tables.actionValue.advance(spd)

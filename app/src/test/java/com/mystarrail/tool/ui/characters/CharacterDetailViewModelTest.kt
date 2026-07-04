@@ -150,6 +150,24 @@ class CharacterDetailViewModelTest {
         version = 1
     )
 
+    @Test fun `recompute passes skill tree to scoring engine without crash`() = runTest {
+        // 验证 viewmodel recompute 链路包含 skillTree 字段
+        // （FakeRepository.getSkillTreeFor 返回 null，是最简路径）
+        val char = sampleChar("seele", "希儿", Element.QUANTUM)
+        val cone = sampleCone("in_the_night", "夜色如墨", Path.HUNT, Element.QUANTUM)
+        val repo = FakeRepository(chars = listOf(char), cones = listOf(cone))
+
+        val vm = CharacterDetailViewModel("seele", repo, scoringEngine)
+        advanceUntilIdle()
+
+        // 验证：state 加载成功 + score 算出来了（说明 skillTree=null 路径无 NPE）
+        val s = vm.state.value
+        assertThat(s.character?.id).isEqualTo("seele")
+        assertThat(s.skillTree).isNull()  // FakeRepository 返回 null
+        assertThat(s.score).isNotNull()
+        assertThat(s.score!!.total).isAtLeast(0.0)
+    }
+
     private fun sampleCone(
         id: String,
         name: String,

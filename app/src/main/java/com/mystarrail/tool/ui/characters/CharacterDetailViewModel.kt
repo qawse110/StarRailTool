@@ -94,6 +94,7 @@ class CharacterDetailViewModel(
     }
 
     private suspend fun recompute(char: Character, cone: LightCone, eidolons: Set<Int>) {
+        val skillTree = _state.value.skillTree
         val build = PlayerBuild(
             characterId = char.id,
             lightConeId = cone.id,
@@ -121,7 +122,8 @@ class CharacterDetailViewModel(
             character = char,
             config = ScoringConfig(playerBuild = build),
             allCharacters = allChars,
-            defaultEnemy = defaultEnemy
+            defaultEnemy = defaultEnemy,
+            skillTree = skillTree
         )
         _state.update { it.copy(score = score) }
     }
