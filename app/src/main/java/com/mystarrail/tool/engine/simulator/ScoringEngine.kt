@@ -2,7 +2,6 @@ package com.mystarrail.tool.engine.simulator
 
 import com.mystarrail.tool.data.model.Character
 import com.mystarrail.tool.data.model.CharacterScore
-import com.mystarrail.tool.data.model.Element
 import com.mystarrail.tool.data.model.Enemy
 import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.ScoringConfig
@@ -14,7 +13,6 @@ import com.mystarrail.tool.engine.simulator.damage.DamageCalculator
 import com.mystarrail.tool.engine.simulator.sim.DiscreteEventSimulator
 import com.mystarrail.tool.engine.simulator.sim.toCombatant
 import kotlin.math.min
-import kotlin.math.sqrt
 
 /**
  * 角色评分引擎（增强版）：100 分制
