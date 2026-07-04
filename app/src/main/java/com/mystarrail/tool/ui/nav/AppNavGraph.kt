@@ -42,7 +42,12 @@ fun AppNavGraph(
             composable(Route.Scenario.path) { ScenarioScreen() }
             composable(Route.Build.path) { BuildScreen() }
             composable(Route.BattleLog.path) {
-                BattleLogScreen(onBack = { navController.popBackStack() })
+                BattleLogScreen(
+                    onBack = { navController.popBackStack() },
+                    onReSimulate = {
+                        navController.popBackStack(Route.TeamBuilder.path, inclusive = false)
+                    }
+                )
             }
             composable(Route.RelicScorer.path) { RelicScorerScreen() }
             composable(Route.Scraper.path) { ScraperScreen() }

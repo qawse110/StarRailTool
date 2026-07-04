@@ -23,7 +23,8 @@ import com.mystarrail.tool.engine.simulator.sim.RoundEvent
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BattleLogScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onReSimulate: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as StarRailApp
@@ -80,6 +81,18 @@ fun BattleLogScreen(
 
                 // 角色贡献面板
                 CharacterContributionPanel(state)
+
+                Spacer(Modifier.height(4.dp))
+
+                // 重新模拟按钮
+                OutlinedButton(
+                    onClick = onReSimulate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+                    Text("🔄 返回配队重新模拟")
+                }
 
                 Spacer(Modifier.height(4.dp))
                 HorizontalDivider()
