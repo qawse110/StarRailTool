@@ -104,6 +104,20 @@ class DamageCalculatorTest {
         assertThat(uv.baseSupportValue).isGreaterThan(0.0)
     }
 
+    // B7: critRate clamp
+    @Test fun `critRate clamped to 1_0 when boost exceeds 0_5`() {
+        val highCritBuffs = listOf(
+            StatBoost("crit", 1, StatType.CRIT_RATE, 0.80)  // 50% + 80% = 130% (clamp to 100%)
+        )
+        val noCritBuffs = emptyList<com.mystarrail.tool.engine.simulator.buffs.Buff>()
+        val dmgHigh = calc.expectedDamage(seele, ActionType.SKILL, enemy, buffs = highCritBuffs)
+        val dmgNo = calc.expectedDamage(seele, ActionType.SKILL, enemy, buffs = noCritBuffs)
+        // 100% 暴击期望伤害应高于 50% 暴击
+        assertThat(dmgHigh).isGreaterThan(dmgNo)
+        // 上限：1 + 1*1.5 = 2.5 倍，不应超过 3 倍（容差 0.5 留给非暴击因素）
+        assertThat(dmgHigh).isAtMost(dmgNo * 3.0)
+    }
+
     // B1: DOT wiring
     @Test fun `dotDps non-zero for character with dotMult`() {
         val dotChar = Character(

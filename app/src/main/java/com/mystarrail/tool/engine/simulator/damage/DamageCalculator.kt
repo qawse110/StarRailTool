@@ -37,12 +37,16 @@ class DamageCalculator(
         val baseAtk = character.baseStats.atk
         val atk = baseAtk * (1 + attackerBuffs.atkBoost)
         val mult = multFor(action, character.scaling)
-        val critRate = 0.5 + attackerBuffs.critRateBoost
+        // B7: critRate clamp to 1.0
+        val critRate = (0.5 + attackerBuffs.critRateBoost).coerceAtMost(1.0)
         val critDmg = 1.0 + attackerBuffs.critDmgBoost
         val critExpect = 1.0 + critRate * critDmg
 
         val dmgBonusMul = 1.0 + attackerBuffs.damageBonus
         val easyDmgMul = 1.0 + debuffSnap.easyDmgTaken
+        // B6: EHR vs EffectRes hit-rate clamp (computed, applied when debuff damage path is added)
+        @Suppress("UNUSED_VARIABLE")
+        val effectHitClamp = (attackerBuffs.effectHitRate - debuffSnap.effectRes).coerceIn(0.0, 1.0)
         val weaknessMul = tables.weakness.multiplier(character.element, enemy.weaknesses)
         val res = tables.element.resist(character.element, character.element)
         val resMul = 1.0 - res
