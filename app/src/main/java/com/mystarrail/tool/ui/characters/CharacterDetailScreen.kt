@@ -20,6 +20,7 @@ import com.mystarrail.tool.ui.characters.components.EidolonsListBlock
 import com.mystarrail.tool.ui.characters.components.LightConeEffectBlock
 import com.mystarrail.tool.ui.characters.components.RelicRecommendationsBlock
 import com.mystarrail.tool.ui.characters.components.ScalingBlock
+import com.mystarrail.tool.ui.characters.components.SkillTreeBlock
 import com.mystarrail.tool.ui.characters.components.TagsBlock
 import com.mystarrail.tool.ui.components.LightConePicker
 import com.mystarrail.tool.ui.components.ScoreRing
@@ -119,6 +120,8 @@ fun CharacterDetailScreen(
                 LightConeEffectBlock(cone = state.selectedCone)
                 // [新增] 遗器推荐 F
                 RelicRecommendationsBlock(relics = state.relicSets, characterRole = char.role)
+                // [新增] 行迹 G
+                SkillTreeBlock(skillTree = state.skillTree)
                 Spacer(Modifier.height(24.dp))
                 // 强制光锥
                 Text(
