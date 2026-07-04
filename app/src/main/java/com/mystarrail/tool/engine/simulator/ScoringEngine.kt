@@ -48,7 +48,13 @@ class ScoringEngine(
 
         val mechanicScore = min(character.tags.size / 5.0, 1.0) * 10.0
 
-        val total = unitScore + cycleScore + teamScore + scenarioScore + mechanicScore
+        // B8: utilityScore = 治疗/护盾能力的 6th 维评分
+        val utilityScore = min(10.0,
+            ((uv.baseHealValue / 2000.0) + (uv.baseShieldValue / 2000.0)).coerceAtMost(1.0) * 10.0
+        )
+
+        val total = (unitScore + cycleScore + teamScore + scenarioScore + mechanicScore + utilityScore)
+            .coerceIn(0.0, 100.0)
         return CharacterScore(
             characterId = character.id,
             unitValueScore = unitScore,
@@ -56,7 +62,8 @@ class ScoringEngine(
             teamSynergyScore = teamScore,
             scenarioScore = scenarioScore,
             mechanicCoverage = mechanicScore,
-            total = total.coerceIn(0.0, 100.0),
+            utilityScore = utilityScore,
+            total = total,
             tier = tierOf(total)
         )
     }

@@ -96,7 +96,29 @@ class ScoringEngineTest {
             defaultEnemy = enemy
         )
         val sum = score.unitValueScore + score.cycleScore + score.teamSynergyScore +
-                  score.scenarioScore + score.mechanicCoverage
+                  score.scenarioScore + score.mechanicCoverage + score.utilityScore
         assertThat(score.total).isWithin(5.0).of(sum)
+    }
+
+    // B8: utilityScore 6th dimension
+    @Test fun `utilityScore within 0-10 and zero for DPS without HEAL or SHIELD tag`() {
+        val score = engine.scoreCharacter(
+            seele,  // seele has no HEAL or SHIELD tag
+            ScoringConfig(
+                playerBuild = PlayerBuild(
+                    characterId = "seele", lightConeId = "in_the_night",
+                    relicSet4 = "quantum_set", mainStats = MainStats(
+                        StatType.CRIT_DMG, StatType.SPD, StatType.EHR, StatType.ATK
+                    ),
+                    subStats = emptyList()
+                )
+            ),
+            allCharacters = listOf(seele),
+            defaultEnemy = enemy
+        )
+        assertThat(score.utilityScore).isAtLeast(0.0)
+        assertThat(score.utilityScore).isAtMost(10.0)
+        // seele 是个 DPS，没有 HEAL/SHIELD tag, baseHealValue/baseShieldValue 都 = 0
+        assertThat(score.utilityScore).isEqualTo(0.0)
     }
 }
