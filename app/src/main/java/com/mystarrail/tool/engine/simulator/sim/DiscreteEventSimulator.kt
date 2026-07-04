@@ -7,6 +7,7 @@ import com.mystarrail.tool.engine.simulator.buffs.Buff
 import com.mystarrail.tool.engine.simulator.damage.DamageCalculator
 import com.mystarrail.tool.engine.simulator.rules.MechanicEngine
 import com.mystarrail.tool.engine.simulator.tables.ActionValueTable
+import kotlin.random.Random
 
 class DiscreteEventSimulator(
     private val damageCalc: DamageCalculator,
@@ -36,7 +37,7 @@ class DiscreteEventSimulator(
 
         // 初始化行动值
         team.forEach { c ->
-            c.actionValue = avTable.advance(c.effectiveSpd) * (0.5..1.0).random()
+            c.actionValue = avTable.advance(c.effectiveSpd) * Random.nextDouble(0.5, 1.0)
         }
 
         repeat(rounds) { roundNum ->

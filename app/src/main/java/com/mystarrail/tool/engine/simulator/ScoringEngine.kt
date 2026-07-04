@@ -210,7 +210,7 @@ class ScoringEngine(
     }
 
     /** 计算角色之间的配队协同加成 */
-    private fun Role.matchBonusTo(other: Role): Int = when (this) {
+    private infix fun Role.matchBonusTo(other: Role): Int = when (this) {
         Role.DPS -> if (other == Role.SUPPORT) 2 else if (other == Role.HEALER) 1 else 0
         Role.SUB_DPS -> if (other == Role.DPS) 2 else 1
         Role.SUPPORT -> 2 // 辅助万金油
