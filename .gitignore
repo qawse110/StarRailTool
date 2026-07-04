@@ -8,3 +8,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Build artifacts
+/app/build/
+/build/
+
+# Operit internal state
+/.operit/
+/.superpowers/
+/.backup/
+
+# Tooling (aapt2 binary, setup script)
+# /tools/  -- intentionally tracked for ARM64 builds
+# /setup_android_env.sh -- intentionally tracked for build env setup
