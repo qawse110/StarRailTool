@@ -1,6 +1,14 @@
-# Seed Data v1 Changelog
+# Seed Data Changelog
 
-首版种子数据（2026-07-03）。
+## v2 (2026-07-04) — Character Detail Rich Display
+
+- 7 个新 UI 区块：baseStats、scaling、tags、eidolons、lightcone、relic recommendations、skill tree
+- 新 `SkillTree` model + Room v1→v2 migration
+- Skill tree 效果通过 `SkillTreeEffectParser` 集成进 DamageCalculator
+- 50+ 角色（来自 `Mar-7th/StarRailRes`）获得中文行迹数据
+- 测试数：188 → 216 (+28)
+
+## v1 (2026-07-03) — Initial Seed
 
 ## 内容
 - 5 个角色：希儿、姬子、景元、卡芙卡、布洛妮娅

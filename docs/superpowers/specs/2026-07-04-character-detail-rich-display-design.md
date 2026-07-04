@@ -1,7 +1,7 @@
 # Character Detail Rich Display — Design Spec
 
 **Date:** 2026-07-04
-**Status:** Approved (user confirmed 2026-07-04, 4 open Q answered with defaults)
+>**Status:** Implemented (commits via plan 2026-07-04-character-detail-rich-display-plan.md)
 **Scope:** A-G3 + I3 (full skill tree + simulator integration)
 
 ## Problem
@@ -295,4 +295,12 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
 
 ---
 
-**Status: Approved. Next: invoke `writing-plans` skill to produce implementation plan.**
+**Status: Implemented.**
+
+## Implementation Log
+
+- 6 commits delivered: A+B+C UI base → D+E+F UI advanced → G data layer → G UI → I3 simulator → verify
+- All 216 tests passing, APK 22MB
+- Migration v1→v2 deployed; existing v1 DB users will migrate on next launch
+- Migration not unit-tested on JVM (Proot ARM64); device verification per spec Q4
+- Plan deviations: see commit messages for 4 plan-vs-actual corrections (Buff signature, StatType.DAMAGE_BONUS absence, etc.)
