@@ -1,0 +1,4 @@
+# Ensure Unix line endings for Gradle wrapper scripts on Linux runners
+gradlew text eol=lf
+*.sh text eol=lf
+gradlew.bat text eol=crlf

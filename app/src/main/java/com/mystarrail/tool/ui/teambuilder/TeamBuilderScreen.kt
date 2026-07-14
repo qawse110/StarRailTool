@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mystarrail.tool.StarRailApp
 import com.mystarrail.tool.data.model.Character
+import com.mystarrail.tool.engine.team.TeamOptimizer
 import com.mystarrail.tool.ui.components.label
 import com.mystarrail.tool.ui.components.shortLabel
 
@@ -29,26 +30,46 @@ fun TeamBuilderScreen(
         factory = TeamBuilderViewModel.factory(
             app.services.repository,
             app.services.scoringEngine,
+            app.services.teamOptimizer,
             com.mystarrail.tool.util.ServiceLocatorResultStore(app.services)
         )
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("配队模拟", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text("配队模拟 / 自动调优", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
+
+        // 场景选择
+        if (state.scenarios.isNotEmpty()) {
+            Text("场景", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                state.scenarios.take(4).forEach { sc ->
+                    FilterChip(
+                        selected = state.selectedScenarioId == sc.id,
+                        onClick = { viewModel.selectScenario(sc.id) },
+                        label = { Text(sc.name, style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
 
         // 4 槽位
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            val ordered = state.selectedIds.toList()
             repeat(4) { idx ->
-                val char = state.allChars.firstOrNull { it.id in state.selectedIds && idx == state.selectedIds.toList().indexOf(it.id) }
+                val char = state.allChars.firstOrNull { it.id == ordered.getOrNull(idx) }
                 SlotBox(
                     label = "槽 ${idx + 1}",
                     char = char,
+                    locked = char != null && char.id in state.lockedIds,
                     onRemove = { char?.let { viewModel.toggleChar(it.id) } },
+                    onToggleLock = { char?.let { viewModel.toggleLock(it.id) } },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -56,7 +77,7 @@ fun TeamBuilderScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // 模拟按钮
+        // 操作按钮
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(
                 onClick = viewModel::simulate,
@@ -72,21 +93,74 @@ fun TeamBuilderScreen(
                     Text("模拟 (${state.selectedIds.size}/4)")
                 }
             }
+            Button(
+                onClick = viewModel::optimizeTeam,
+                enabled = state.canOptimize
+            ) {
+                if (state.isOptimizing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("自动配队")
+                }
+            }
             OutlinedButton(onClick = viewModel::clearSelection) {
                 Text("清空")
             }
         }
 
+        state.optimizeError?.let { err ->
+            Spacer(Modifier.height(4.dp))
+            Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+
         Spacer(Modifier.height(12.dp))
 
-        // 上次结果（增强版）
+        // 队伍评分
+        state.lastTeamScore?.let { ts ->
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        "队伍评分 ${"%.1f".format(ts.score)} / 100",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        StatItem2("总伤", "${"%.0f".format(ts.totalDamage)}")
+                        StatItem2("治疗", "${"%.0f".format(ts.totalHealing)}")
+                        StatItem2("护盾", "${"%.0f".format(ts.totalShielding)}")
+                        StatItem2("击杀回合", ts.roundsToKill?.toString() ?: "—")
+                    }
+                    if (ts.breakdown.isNotEmpty()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "分维: " + ts.breakdown.entries.joinToString(" · ") {
+                                "${it.key} ${"%.0f".format(it.value)}"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // 上次模拟明细
         if (state.lastResult != null) {
             val result = state.lastResult!!
             val totalDmg = result.damageBreakdown.total
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    // 汇总
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -101,7 +175,6 @@ fun TeamBuilderScreen(
                     HorizontalDivider()
                     Spacer(Modifier.height(8.dp))
 
-                    // 伤害构成
                     Text("伤害构成", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
                     Row(
@@ -115,8 +188,6 @@ fun TeamBuilderScreen(
                     }
 
                     Spacer(Modifier.height(8.dp))
-
-                    // 角色贡献
                     Text("角色贡献", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(4.dp))
                     result.totalDamage.entries.sortedByDescending { it.value }.forEach { (charId, dmg) ->
@@ -130,15 +201,9 @@ fun TeamBuilderScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(
-                                "行动:${result.actions[charId] ?: 0} 大招:${result.ultsCast[charId] ?: 0}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                     }
 
-                    Spacer(Modifier.height(4.dp))
                     TextButton(onClick = onShowBattleLog) {
                         Text("📜 查看详细战斗日志")
                     }
@@ -147,8 +212,23 @@ fun TeamBuilderScreen(
             Spacer(Modifier.height(12.dp))
         }
 
-        // 角色库列表（可点选）
-        Text("角色库（点选 4 个）", style = MaterialTheme.typography.titleSmall)
+        // 自动推荐列表
+        if (state.recommendations.isNotEmpty()) {
+            Text("推荐配队", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            state.recommendations.forEachIndexed { index, rec ->
+                RecommendationCard(
+                    index = index + 1,
+                    rec = rec,
+                    onApply = { viewModel.applyRecommendation(rec) }
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+
+        // 角色库
+        Text("角色库（点选 4 个；已选角色再点锁可锁定）", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(8.dp))
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -158,10 +238,43 @@ fun TeamBuilderScreen(
                 CharSelectRow(
                     c = c,
                     isSelected = c.id in state.selectedIds,
+                    isLocked = c.id in state.lockedIds,
                     enabled = c.id in state.selectedIds || state.selectedIds.size < 4,
-                    onClick = { viewModel.toggleChar(c.id) }
+                    onClick = { viewModel.toggleChar(c.id) },
+                    onLock = { viewModel.toggleLock(c.id) }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RecommendationCard(
+    index: Int,
+    rec: TeamOptimizer.Recommendation,
+    onApply: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "#$index  ${"%.1f".format(rec.teamScore.score)} 分 · " +
+                        rec.team.joinToString(" / ") { it.name },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onApply) { Text("应用") }
+            }
+            Text(
+                rec.reasons.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -180,8 +293,11 @@ private fun DmgLabel(label: String, value: Double, total: Double) {
         Text("${"%.0f".format(value)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (total > 0) {
-            Text("${(value / total * 100).toInt()}%", style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary)
+            Text(
+                "${(value / total * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
@@ -190,13 +306,13 @@ private fun DmgLabel(label: String, value: Double, total: Double) {
 private fun SlotBox(
     label: String,
     char: Character?,
+    locked: Boolean,
     onRemove: () -> Unit,
+    onToggleLock: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = modifier
-            .height(80.dp)
-            .clickable(enabled = char != null, onClick = onRemove),
+        modifier = modifier.height(88.dp),
         shape = MaterialTheme.shapes.medium,
         color = if (char != null) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant
@@ -207,12 +323,22 @@ private fun SlotBox(
             } else {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(onClick = onRemove)
+                        .padding(4.dp)
                 ) {
                     Text(char.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
                     Text(
                         "${char.rarity}★ ${char.path.label()}",
                         style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        if (locked) "🔒 锁定" else "点选锁定",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable(onClick = onToggleLock)
                     )
                 }
             }
@@ -224,8 +350,10 @@ private fun SlotBox(
 private fun CharSelectRow(
     c: Character,
     isSelected: Boolean,
+    isLocked: Boolean,
     enabled: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLock: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -242,12 +370,17 @@ private fun CharSelectRow(
         ) {
             Checkbox(checked = isSelected, onCheckedChange = null, enabled = enabled)
             Spacer(Modifier.width(8.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text("${c.name}  ${c.rarity}★", fontWeight = FontWeight.Bold)
                 Text(
                     "${c.path.label()} · ${c.element.shortLabel()}",
                     style = MaterialTheme.typography.bodySmall
                 )
+            }
+            if (isSelected) {
+                TextButton(onClick = onLock) {
+                    Text(if (isLocked) "解锁" else "锁定")
+                }
             }
         }
     }

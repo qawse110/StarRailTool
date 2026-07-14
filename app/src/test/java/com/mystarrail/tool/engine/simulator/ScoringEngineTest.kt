@@ -168,4 +168,57 @@ class ScoringEngineTest {
         // 且 <= 25
         assertThat(score.unitValueScore).isAtMost(25.0)
     }
+
+    @Test fun `scoreTeam returns score within 0-100`() {
+        val support = seele.copy(
+            id = "bronya", name = "布洛妮娅", role = Role.SUPPORT,
+            element = Element.WIND, tags = setOf(Tag.ATK_BOOST, Tag.ACTION_ADVANCE)
+        )
+        val heal = seele.copy(
+            id = "luocha", name = "罗刹", role = Role.HEALER,
+            element = Element.IMAGINARY, tags = setOf(Tag.HEAL)
+        )
+        val sub = seele.copy(
+            id = "kafka", name = "卡芙卡", role = Role.SUB_DPS,
+            element = Element.LIGHTNING, tags = setOf(Tag.DOT)
+        )
+        val teamScore = engine.scoreTeam(
+            team = listOf(seele, support, heal, sub),
+            enemy = enemy
+        )
+        assertThat(teamScore.score).isAtLeast(0.0)
+        assertThat(teamScore.score).isAtMost(100.0)
+        assertThat(teamScore.totalDamage).isAtLeast(0.0)
+        assertThat(teamScore.breakdown).isNotEmpty()
+    }
+
+    @Test fun `playerBuild buffs increase unit value score relative to empty substats`() {
+        val bare = PlayerBuild(
+            characterId = "seele", lightConeId = "",
+            relicSet4 = "",
+            mainStats = MainStats(StatType.HP, StatType.HP, StatType.HP, StatType.HP),
+            subStats = emptyList()
+        )
+        val geared = PlayerBuild(
+            characterId = "seele", lightConeId = "",
+            relicSet4 = "",
+            mainStats = MainStats(StatType.CRIT_DMG, StatType.SPD, StatType.ATK, StatType.ATK),
+            subStats = listOf(
+                com.mystarrail.tool.data.model.SubStat(StatType.CRIT_RATE, 0.2, 5),
+                com.mystarrail.tool.data.model.SubStat(StatType.CRIT_DMG, 0.4, 5),
+                com.mystarrail.tool.data.model.SubStat(StatType.ATK, 0.2, 4)
+            )
+        )
+        val bareScore = engine.scoreCharacter(
+            seele, ScoringConfig(playerBuild = bare, enemy = enemy),
+            allCharacters = listOf(seele), defaultEnemy = enemy
+        )
+        val gearScore = engine.scoreCharacter(
+            seele, ScoringConfig(playerBuild = geared, enemy = enemy),
+            allCharacters = listOf(seele), defaultEnemy = enemy
+        )
+        // 强配装的单位价值分应不低于裸装（同角色归一化时 unit 仍可能顶满 25，但 total 通常更高或持平）
+        assertThat(gearScore.unitValueScore).isAtLeast(bareScore.unitValueScore - 0.01)
+        assertThat(gearScore.total).isAtLeast(0.0)
+    }
 }

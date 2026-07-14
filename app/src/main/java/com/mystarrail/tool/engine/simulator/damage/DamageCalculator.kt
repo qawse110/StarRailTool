@@ -71,12 +71,18 @@ class DamageCalculator(
 
     /**
      * 角色单位价值（综合期望）
+     *
+     * @param buildBuffs 来自光锥/遗器/主副词条/星魂的永久 Buff（由 [com.mystarrail.tool.engine.build.BuildEffectResolver] 生成）
+     * @param effectiveSpd 叠加速度后的面板速度；null 时用角色基础速度
      */
     fun unitValue(
         character: Character,
         enemy: Enemy,
         buffs: List<Buff> = emptyList(),
-        skillTree: SkillTree? = null
+        skillTree: SkillTree? = null,
+        buildBuffs: List<Buff> = emptyList(),
+        effectiveSpd: Double? = null,
+        attackerLevel: Int = 80
     ): CharacterUnitValue {
         // 行迹 → Buff 翻译
         val skillTreeBuffs: List<Buff> = skillTree?.let { st ->
@@ -100,15 +106,27 @@ class DamageCalculator(
             } else emptyList()
             statBuffs + dmgBuff
         } ?: emptyList()
-        val allBuffs = buffs + skillTreeBuffs
+        val allBuffs = buffs + buildBuffs + skillTreeBuffs
 
-        val skill = expectedDamage(character, ActionType.SKILL, enemy, buffs = allBuffs)
-        val ult = expectedDamage(character, ActionType.ULT, enemy, buffs = allBuffs)
-        val talent = expectedDamage(character, ActionType.TALENT, enemy, buffs = allBuffs)
+        val skill = expectedDamage(
+            character, ActionType.SKILL, enemy,
+            attackerLevel = attackerLevel, buffs = allBuffs
+        )
+        val ult = expectedDamage(
+            character, ActionType.ULT, enemy,
+            attackerLevel = attackerLevel, buffs = allBuffs
+        )
+        val talent = expectedDamage(
+            character, ActionType.TALENT, enemy,
+            attackerLevel = attackerLevel, buffs = allBuffs
+        )
         val followUp = if (character.scaling.followUpMult > 0)
-            expectedDamage(character, ActionType.FOLLOW_UP, enemy, buffs = allBuffs) else 0.0
+            expectedDamage(
+                character, ActionType.FOLLOW_UP, enemy,
+                attackerLevel = attackerLevel, buffs = allBuffs
+            ) else 0.0
 
-        val spd = character.baseStats.spd
+        val spd = effectiveSpd ?: character.baseStats.spd
         val actionValue = tables.actionValue.advance(spd)
         val effectiveAV = 1.0 / actionValue * 10000.0
 
@@ -119,13 +137,13 @@ class DamageCalculator(
         val healValue = if (character.tags.contains(Tag.HEAL)) {
             val baseHeal = character.baseStats.atk
             val healerBuffs = buffEval.evaluate(allBuffs)
-            baseHeal * (1 + healerBuffs.healingBoost) * 0.5
+            baseHeal * (1 + healerBuffs.healingBoost) * (1 + healerBuffs.hpBoost * 0.5) * 0.5
         } else 0.0
         // B4: baseShieldValue scales with shieldBoost (1 + boost) * baseShield
         val shieldValue = if (character.tags.contains(Tag.SHIELD)) {
             val baseShield = character.baseStats.def * 0.5
             val shielderBuffs = buffEval.evaluate(allBuffs)
-            baseShield * (1 + shielderBuffs.shieldBoost)
+            baseShield * (1 + shielderBuffs.shieldBoost) * (1 + shielderBuffs.defBoost * 0.3)
         } else 0.0
 
         // B1: DOT 期望公式

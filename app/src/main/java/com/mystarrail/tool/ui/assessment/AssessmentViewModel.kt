@@ -7,23 +7,22 @@ import com.mystarrail.tool.data.model.Character
 import com.mystarrail.tool.data.model.CharacterScore
 import com.mystarrail.tool.data.model.Enemy
 import com.mystarrail.tool.data.model.EnemyType
-import com.mystarrail.tool.data.model.MainStats
 import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.ScoringConfig
-import com.mystarrail.tool.data.model.StatType
 import com.mystarrail.tool.data.repository.CharacterRepository
+import com.mystarrail.tool.engine.build.BuildEffectResolver
+import com.mystarrail.tool.engine.simulator.GearLookup
 import com.mystarrail.tool.engine.simulator.ScoringEngine
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class AssessmentUiState(
     val rows: List<CharacterScore> = emptyList(),
     val charMap: Map<String, Character> = emptyMap(),
+    val useSavedBuilds: Boolean = true,
     val isLoading: Boolean = true
 )
 
@@ -32,16 +31,34 @@ class AssessmentViewModel(
     private val scoringEngine: ScoringEngine
 ) : ViewModel() {
 
-    val uiState: StateFlow<AssessmentUiState> =
-        MutableStateFlow(AssessmentUiState()).asStateFlow()
-
     private val _state = MutableStateFlow(AssessmentUiState())
     val state: StateFlow<AssessmentUiState> = _state.asStateFlow()
 
+    // 兼容旧字段名
+    val uiState: StateFlow<AssessmentUiState> = state
+
     init {
+        refresh()
+    }
+
+    fun setUseSavedBuilds(use: Boolean) {
+        if (_state.value.useSavedBuilds == use) return
+        _state.value = _state.value.copy(useSavedBuilds = use, isLoading = true)
+        refresh()
+    }
+
+    fun refresh() {
         viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
             val chars = repository.observeAllCharacters().first()
             val charMap = chars.associateBy { it.id }
+            val builds = repository.observeAllPlayerBuilds().first()
+                .groupBy { it.characterId }
+                .mapValues { (_, list) -> list.maxByOrNull { it.id } }
+            val cones = repository.observeAllLightCones().first().associateBy { it.id }
+            val relics = repository.observeAllRelicSets().first().associateBy { it.id }
+            val gear = GearLookup.Maps(cones, relics)
+
             val defaultEnemy = Enemy(
                 id = "default",
                 name = "Default Boss",
@@ -51,30 +68,23 @@ class AssessmentViewModel(
                 hp = 200_000.0,
                 toughness = 240.0
             )
+            val useSaved = _state.value.useSavedBuilds
             val scores = chars.map { c ->
-                val build = PlayerBuild(
-                    characterId = c.id,
-                    lightConeId = "",
-                    relicSet4 = "",
-                    mainStats = MainStats(
-                        body = StatType.CRIT_DMG,
-                        boots = StatType.SPD,
-                        sphere = StatType.ATK,
-                        rope = StatType.ATK
-                    ),
-                    subStats = emptyList()
-                )
+                val saved = if (useSaved) builds[c.id] else null
+                val build: PlayerBuild = saved ?: BuildEffectResolver.defaultBuild(c)
                 scoringEngine.scoreCharacter(
                     character = c,
                     config = ScoringConfig(playerBuild = build),
                     allCharacters = chars,
-                    defaultEnemy = defaultEnemy
+                    defaultEnemy = defaultEnemy,
+                    gearLookup = gear
                 )
             }.sortedByDescending { it.total }
 
             _state.value = AssessmentUiState(
                 rows = scores,
                 charMap = charMap,
+                useSavedBuilds = useSaved,
                 isLoading = false
             )
         }

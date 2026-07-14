@@ -42,6 +42,23 @@ fun AssessmentScreen() {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = state.useSavedBuilds,
+                onClick = { viewModel.setUseSavedBuilds(true) },
+                label = { Text("已存面板") }
+            )
+            FilterChip(
+                selected = !state.useSavedBuilds,
+                onClick = { viewModel.setUseSavedBuilds(false) },
+                label = { Text("模板配装") }
+            )
+            TextButton(onClick = viewModel::refresh) { Text("刷新") }
+        }
         Spacer(Modifier.height(12.dp))
 
         if (state.isLoading) {

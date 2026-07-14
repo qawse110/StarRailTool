@@ -3,8 +3,10 @@ package com.mystarrail.tool.engine.simulator.sim
 import com.mystarrail.tool.data.model.Character
 import com.mystarrail.tool.data.model.Eidolon
 import com.mystarrail.tool.data.model.LightCone
+import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Stats
+import com.mystarrail.tool.engine.build.BuildEffectResolver
 import com.mystarrail.tool.engine.simulator.buffs.Buff
 
 data class Combatant(
@@ -30,15 +32,34 @@ data class Combatant(
 fun Character.toCombatant(
     lightCone: LightCone? = null,
     relicSet: RelicSet? = null,
-    eidolons: Map<Int, Eidolon> = emptyMap()
-): Combatant = Combatant(
-    character = this,
-    stats = baseStats,
-    lightCone = lightCone,
-    relicSet = relicSet,
-    eidolons = eidolons,
-    hp = baseStats.hp * 100
-)
+    eidolons: Map<Int, Eidolon> = emptyMap(),
+    build: PlayerBuild? = null,
+    relicSet2: RelicSet? = null,
+    eidolonList: List<Eidolon> = emptyList()
+): Combatant {
+    val resolvedStats = BuildEffectResolver.applyFlatStats(baseStats, build)
+    val combatant = Combatant(
+        character = this,
+        stats = resolvedStats,
+        lightCone = lightCone,
+        relicSet = relicSet,
+        eidolons = eidolons.ifEmpty {
+            eidolonList.filter { it.level in (build?.eidolons ?: emptySet()) }
+                .associateBy { it.level }
+        },
+        level = build?.level ?: 80,
+        hp = resolvedStats.hp * 100
+    )
+    val buildBuffs = BuildEffectResolver.resolveBuffs(
+        build = build,
+        lightCone = lightCone,
+        relicSet4 = relicSet,
+        relicSet2 = relicSet2,
+        eidolons = eidolonList.ifEmpty { eidolons.values.toList() }
+    )
+    combatant.buffs.addAll(buildBuffs)
+    return combatant
+}
 
 fun com.mystarrail.tool.data.model.Enemy.toCombatant(): Combatant {
     val atk = hp * 0.05

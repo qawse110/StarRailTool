@@ -9,13 +9,13 @@ import com.mystarrail.tool.data.model.Eidolon
 import com.mystarrail.tool.data.model.Enemy
 import com.mystarrail.tool.data.model.EnemyType
 import com.mystarrail.tool.data.model.LightCone
-import com.mystarrail.tool.data.model.MainStats
 import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.ScoringConfig
 import com.mystarrail.tool.data.model.SkillTree
-import com.mystarrail.tool.data.model.StatType
 import com.mystarrail.tool.data.repository.CharacterRepository
+import com.mystarrail.tool.engine.build.BuildEffectResolver
+import com.mystarrail.tool.engine.simulator.GearLookup
 import com.mystarrail.tool.engine.simulator.ScoringEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +32,9 @@ data class CharacterDetailUiState(
     val eidolons: List<Eidolon> = emptyList(),
     val score: CharacterScore? = null,
     val relicSets: List<RelicSet> = emptyList(),
-    val skillTree: SkillTree? = null
+    val skillTree: SkillTree? = null,
+    val savedBuild: PlayerBuild? = null,
+    val usingSavedBuild: Boolean = false
 )
 
 class CharacterDetailViewModel(
@@ -51,8 +53,9 @@ class CharacterDetailViewModel(
             val relics = repository.observeAllRelicSets().first()
             val eidolons = repository.getEidolonsFor(characterId)
             val skillTree = repository.getSkillTreeFor(characterId)
-            // 默认选择第一个光锥（强制光锥：UI 必须至少选一个）
-            val defaultCone = cones.firstOrNull()
+            val saved = repository.observePlayerBuild(characterId).first().maxByOrNull { it.id }
+            val defaultCone = saved?.lightConeId?.let { id -> cones.firstOrNull { it.id == id } }
+                ?: cones.firstOrNull()
             _state.update {
                 it.copy(
                     character = char,
@@ -60,54 +63,72 @@ class CharacterDetailViewModel(
                     selectedCone = defaultCone,
                     eidolons = eidolons,
                     relicSets = relics,
-                    skillTree = skillTree
+                    skillTree = skillTree,
+                    savedBuild = saved,
+                    usingSavedBuild = saved != null,
+                    selectedEidolons = saved?.eidolons ?: emptySet()
                 )
             }
-            if (char != null && defaultCone != null) {
-                recompute(char, defaultCone, emptySet())
+            if (char != null) {
+                recompute()
             }
         }
     }
 
     fun selectCone(cone: LightCone?) {
-        _state.update { it.copy(selectedCone = cone) }
-        val s = _state.value
-        val char = s.character ?: return
-        val c = cone ?: return
-        viewModelScope.launch {
-            recompute(char, c, s.selectedEidolons)
-        }
+        _state.update { it.copy(selectedCone = cone, usingSavedBuild = false) }
+        viewModelScope.launch { recompute() }
     }
 
     fun toggleEidolon(level: Int) {
         _state.update {
             val newSet = it.selectedEidolons.toMutableSet()
             if (level in newSet) newSet.remove(level) else newSet.add(level)
-            it.copy(selectedEidolons = newSet)
+            it.copy(selectedEidolons = newSet, usingSavedBuild = false)
         }
-        val s = _state.value
-        val char = s.character ?: return
-        val cone = s.selectedCone ?: return
-        viewModelScope.launch {
-            recompute(char, cone, s.selectedEidolons)
-        }
+        viewModelScope.launch { recompute() }
     }
 
-    private suspend fun recompute(char: Character, cone: LightCone, eidolons: Set<Int>) {
-        val skillTree = _state.value.skillTree
-        val build = PlayerBuild(
-            characterId = char.id,
-            lightConeId = cone.id,
-            relicSet4 = "quantum_set", // 占位：默认套
-            mainStats = MainStats(
-                body = StatType.CRIT_DMG,
-                boots = StatType.SPD,
-                sphere = StatType.EHR,
-                rope = StatType.ATK
-            ),
-            subStats = emptyList(),
-            eidolons = eidolons
-        )
+    fun useSavedBuild(use: Boolean) {
+        val saved = _state.value.savedBuild
+        if (use && saved != null) {
+            val cone = _state.value.lightCones.firstOrNull { it.id == saved.lightConeId }
+            _state.update {
+                it.copy(
+                    usingSavedBuild = true,
+                    selectedCone = cone ?: it.selectedCone,
+                    selectedEidolons = saved.eidolons
+                )
+            }
+        } else {
+            _state.update { it.copy(usingSavedBuild = false) }
+        }
+        viewModelScope.launch { recompute() }
+    }
+
+    fun rescore() {
+        viewModelScope.launch { recompute() }
+    }
+
+    private suspend fun recompute() {
+        val s = _state.value
+        val char = s.character ?: return
+        val skillTree = s.skillTree
+        val cones = s.lightCones.associateBy { it.id }
+        val relics = s.relicSets.associateBy { it.id }
+        val gear = GearLookup.Maps(cones, relics)
+
+        val build: PlayerBuild = if (s.usingSavedBuild && s.savedBuild != null) {
+            s.savedBuild
+        } else {
+            val coneId = s.selectedCone?.id.orEmpty()
+            BuildEffectResolver.defaultBuild(char, lightConeId = coneId).copy(
+                eidolons = s.selectedEidolons,
+                relicSet4 = s.relicSets.firstOrNull { char.role in it.suitableFor }?.id
+                    ?: s.relicSets.firstOrNull()?.id.orEmpty()
+            )
+        }
+
         val allChars = repository.observeAllCharacters().first()
         val defaultEnemy = Enemy(
             id = "default",
@@ -123,7 +144,8 @@ class CharacterDetailViewModel(
             config = ScoringConfig(playerBuild = build),
             allCharacters = allChars,
             defaultEnemy = defaultEnemy,
-            skillTree = skillTree
+            skillTree = skillTree,
+            gearLookup = gear
         )
         _state.update { it.copy(score = score) }
     }

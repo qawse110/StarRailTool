@@ -17,13 +17,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mystarrail.tool.StarRailApp
-import com.mystarrail.tool.data.model.LightCone
 import com.mystarrail.tool.data.model.PlayerBuild
 
 /**
  * 玩家面板（Build CRUD）界面。
  *
- * 列表展示所有已保存的 PlayerBuild，支持新建/编辑/删除。
+ * 列表展示所有已保存的 PlayerBuild，支持新建/编辑/删除/一键评分。
  * 编辑/新建使用 [BuildEditDialog]。
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,13 +31,12 @@ fun BuildScreen() {
     val context = LocalContext.current
     val app = context.applicationContext as StarRailApp
     val viewModel: BuildViewModel = viewModel(
-        factory = BuildViewModel.factory(app.services.repository)
+        factory = BuildViewModel.factory(app.services.repository, app.services.scoringEngine)
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showDialog by remember { mutableStateOf(false) }
     var editingBuild by remember { mutableStateOf<PlayerBuild?>(null) }
 
-    // 加载所有角色和光锥（供 dialog 使用）
     val allCharacters by app.services.repository.observeAllCharacters()
         .collectAsState(initial = emptyList())
     val allLightCones by app.services.repository.observeAllLightCones()
@@ -60,7 +58,6 @@ fun BuildScreen() {
         }
     ) { padding ->
         if (state.builds.isEmpty()) {
-            // 空状态
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -82,30 +79,48 @@ fun BuildScreen() {
                 }
             }
         } else {
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                items(state.builds, key = { it.id }) { build ->
-                    val character = state.charMap[build.characterId]
-                    val coneName = allLightCones.firstOrNull { it.id == build.lightConeId }?.name
-                    BuildCard(
-                        build = build,
-                        characterName = character?.name ?: build.characterId,
-                        lightConeName = coneName,
-                        onEdit = { editingBuild = build; showDialog = true },
-                        onDelete = { viewModel.delete(build.id) }
+                state.scoreMessage?.let { msg ->
+                    Text(
+                        msg,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
                     )
+                }
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    items(state.builds, key = { it.id }) { build ->
+                        val character = state.charMap[build.characterId]
+                        val coneName = allLightCones.firstOrNull { it.id == build.lightConeId }?.name
+                        BuildCard(
+                            build = build,
+                            characterName = character?.name ?: build.characterId,
+                            lightConeName = coneName,
+                            scored = state.lastScoredBuildId == build.id,
+                            scoreTotal = if (state.lastScoredBuildId == build.id) {
+                                state.lastScore?.total
+                            } else null,
+                            onEdit = { editingBuild = build; showDialog = true },
+                            onDelete = { viewModel.delete(build.id) },
+                            onRescore = { viewModel.rescore(build) }
+                        )
+                    }
                 }
             }
         }
     }
 
-    // 编辑/新建弹窗
     if (showDialog) {
         BuildEditDialog(
             existing = editingBuild,
@@ -134,8 +149,11 @@ private fun BuildCard(
     build: PlayerBuild,
     characterName: String,
     lightConeName: String?,
+    scored: Boolean = false,
+    scoreTotal: Double? = null,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onRescore: () -> Unit = {}
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -145,7 +163,6 @@ private fun BuildCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // 角色名 + 等级
                 Text(
                     characterName,
                     style = MaterialTheme.typography.titleMedium,
@@ -171,8 +188,16 @@ private fun BuildCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                if (scored && scoreTotal != null) {
+                    Text(
+                        "评分 ${"%.1f".format(scoreTotal)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-            // 操作按钮
+            TextButton(onClick = onRescore) { Text("评分") }
             IconButton(onClick = onEdit) {
                 Icon(
                     Icons.Default.Edit,

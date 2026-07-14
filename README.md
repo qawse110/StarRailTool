@@ -4,12 +4,16 @@
 
 ## 概述
 
-为崩铁玩家提供一个**离线优先**的角色面板管理 + 配装评分工具：
+为崩铁玩家提供一个**离线优先**的角色面板管理 + 配装评分 + 自动调优工具：
 
 - 角色基础信息（命途 / 元素 / 标签 / 技能倍率 / 行迹）
 - 玩家自定义面板（光锥 / 遗器 / 主属性 / 副词条 / 星魂 / 备注）
-- **6 维战斗评分**（单位价值 + 循环 + 配队 + 场景 + 机制覆盖 + **治疗护盾 utilityScore**）
+- **6 维角色评分**（单位价值 + 循环 + 配队 + 场景 + 机制覆盖 + **治疗护盾 utilityScore**）
+- **队伍评分**（DES 模拟 → 总伤 / 治疗 / 护盾 / 击杀回合 / 分维）
+- **自动配队调优**（Role 剪枝 + 弱点启发式 + DES 精排 Top-N）
+- **自动遗器调优**（4+2 / 主词条搜索，期望 unitValue 目标函数，可写入面板）
 - 战斗模拟器：DOT 持续伤害 / Buff 累积 / 暴击期望 / 等级压制 / 弱点易伤
+- 真实 `PlayerBuild` 参与伤害与评分（主词条 / 副词条 / 光锥 / 遗器套效果）
 
 ## 技术栈
 
@@ -41,28 +45,39 @@ app/src/main/java/com/mystarrail/tool/
 │   ├── seed/                   # 本地 seed (assets) + 远程 (Mar-7th)
 │   └── remote/                 # KeywordMatcher 关键字 → Buff 规则
 ├── engine/
+│   ├── build/                  # BuildEffectResolver（配装→Buff/面板）
+│   ├── team/                   # TeamOptimizer 自动配队
+│   ├── relic/                  # RelicOptimizer 自动遗器
 │   └── simulator/              # 战斗模拟器
 │       ├── buffs/              # Buff sealed interface + BuffSnapshot + Evaluator
 │       ├── damage/             # DamageCalculator + CharacterUnitValue
 │       ├── rules/              # MechanicEngine + DotRule / BreakRule / ...
 │       ├── sim/                # DiscreteEventSimulator
 │       ├── tables/             # FormulaTables（弱点/抗性/等级/行动值）
-│       ├── ScoringEngine.kt    # 6 维评分
+│       ├── ScoringEngine.kt    # 角色 6 维 + scoreTeam
 │       └── SkillTreeEffectParser.kt
 ├── ui/
 │   ├── nav/                    # NavGraph
 │   ├── theme/                  # Material 3 主题
 │   ├── components/             # 复用 Composable
 │   ├── characters/             # 角色详情（含 SkillTreeBlock）
-│   ├── build/                  # 配装编辑（CRUD）
-│   ├── teambuilder/            # 队伍编辑器
+│   ├── build/                  # 配装编辑（CRUD + 一键评分）
+│   ├── teambuilder/            # 队伍编辑器 + 自动配队
 │   ├── battle/                 # 战斗模拟
-│   ├── assessment/             # 全角色评估
+│   ├── assessment/             # 全角色评估（模板/已存面板）
 │   ├── scenario/               # 场景适配
-│   ├── relic/                  # 遗器浏览
+│   ├── relic/                  # 遗器评估 + 自动调优
 │   └── scraper/                # Wiki 抓取 UI
 └── util/                       # 工具函数
 ```
+
+## 自动调优说明
+
+| 功能 | 入口 | 行为 | 限制 |
+|---|---|---|---|
+| 自动配队 | 配队页「自动配队」 | 角色池 + 场景弱点 → Top 5 推荐，可锁定槽位 | 非全量 C(n,4)；精排候选约 20 队 |
+| 自动遗器 | 遗器页「自动调优遗器」 | 搜索 4+2/主词条，按 unitValue 排序，可写入面板 | **目标配装**搜索，非背包多件 OCR/导入 |
+| 面板评分 | 玩家面板「评分」/ 强度榜切换 | 使用已存 `PlayerBuild` 参与 `ScoringEngine` | 无面板时用角色默认模板配装 |
 
 ## 核心数据模型
 
@@ -71,6 +86,7 @@ app/src/main/java/com/mystarrail/tool/
 - **`BuffSnapshot`**: 评估后的扁平字段（15 字段：atkBoost, critRateBoost, effectHitRate, healingBoost, ...）
 - **`CharacterUnitValue`**: 角色单位价值（expectedSkill/Ult/Talent/FollowUpDmg, dotDps, baseHealValue, baseShieldValue, ...）
 - **`CharacterScore`**: 6 维评分（unitValue/cycle/teamSynergy/scenario/mechanicCoverage + **utilityScore 0-10**）
+- **`TeamScore`**: 队伍模拟评分（totalDamage/healing/shielding/roundsToKill/breakdown/score）
 
 ## 战斗公式
 
@@ -104,7 +120,7 @@ effectHitClamp = (EHR - EffectRes).coerceIn(0, 1)     // B6 预计算
 
 ```bash
 # 测试
-./gradlew :app:test
+./gradlew :app:testDebugUnitTest
 
 # 构建 Debug APK
 ./gradlew :app:assembleDebug
@@ -113,11 +129,25 @@ effectHitClamp = (EHR - EffectRes).coerceIn(0, 1)     // B6 预计算
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
+## GitHub Actions 打包
+
+工作流：`.github/workflows/ci.yml`
+
+| 触发 | 行为 |
+|---|---|
+| `push` / `pull_request` → `master`/`main` | 单元测试 + `assembleDebug` |
+| `workflow_dispatch` | 手动在 Actions 页点 **Run workflow** |
+
+产物：
+- Artifact `StarRailTool-debug-<sha>` → Debug APK
+- Artifact `test-reports-<sha>` → 测试报告（失败也会上传）
+
+下载：仓库 **Actions** → 选中运行记录 → **Artifacts**。
+
 ## 测试
 
-- **250 单元测试**，0 failures / 0 errors
+- 单元测试覆盖: Buff/Damage/Scoring/TeamOptimizer/RelicOptimizer/SkillTree/Character Detail/Build
 - 测试框架: JUnit 4.13.2 + Truth 1.4.4
-- 覆盖: Buff/Damage/Scoring/SkillTree/Character Detail/Build/Converter/Repository
 
 ```bash
 ./gradlew :app:test

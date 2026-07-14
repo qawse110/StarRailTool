@@ -103,6 +103,23 @@ fun CharacterDetailScreen(
                     }
                 }
 
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (state.savedBuild != null) {
+                        FilterChip(
+                            selected = state.usingSavedBuild,
+                            onClick = { viewModel.useSavedBuild(!state.usingSavedBuild) },
+                            label = {
+                                Text(if (state.usingSavedBuild) "使用已存面板" else "切换已存面板")
+                            }
+                        )
+                    }
+                    TextButton(onClick = viewModel::rescore) { Text("重算评分") }
+                }
+
                 Spacer(Modifier.height(24.dp))
 
                 // 分维度条

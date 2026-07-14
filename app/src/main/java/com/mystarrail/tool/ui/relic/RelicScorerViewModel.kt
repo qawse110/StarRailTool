@@ -4,17 +4,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.mystarrail.tool.data.model.Character
+import com.mystarrail.tool.data.model.Enemy
+import com.mystarrail.tool.data.model.EnemyType
 import com.mystarrail.tool.data.model.MainStats
+import com.mystarrail.tool.data.model.PlayerBuild
 import com.mystarrail.tool.data.model.RelicSet
 import com.mystarrail.tool.data.model.Role
 import com.mystarrail.tool.data.model.StatType
 import com.mystarrail.tool.data.model.SubStat
 import com.mystarrail.tool.data.repository.CharacterRepository
+import com.mystarrail.tool.engine.relic.RelicOptimizer
+import com.mystarrail.tool.engine.simulator.damage.DamageCalculator
+import com.mystarrail.tool.engine.simulator.tables.FormulaTables
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class MainStatRecommendation(
     val body: StatType,
@@ -23,6 +31,15 @@ data class MainStatRecommendation(
     val rope: StatType
 ) {
     val asModel: MainStats get() = MainStats(body, boots, sphere, rope)
+
+    companion object {
+        fun from(main: MainStats) = MainStatRecommendation(
+            body = main.body,
+            boots = main.boots,
+            sphere = main.sphere,
+            rope = main.rope
+        )
+    }
 }
 
 data class RelicScorerUiState(
@@ -34,11 +51,15 @@ data class RelicScorerUiState(
     val inputSubStats: List<SubStat> = emptyList(),
     val subStatScore: Double = 0.0,
     val bestSet: RelicSet? = null,
+    val recommendations: List<RelicOptimizer.Recommendation> = emptyList(),
+    val isOptimizing: Boolean = false,
+    val applyMessage: String? = null,
     val isLoading: Boolean = true
 )
 
 class RelicScorerViewModel(
-    private val repository: CharacterRepository
+    private val repository: CharacterRepository,
+    private val relicOptimizer: RelicOptimizer
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RelicScorerUiState())
@@ -59,92 +80,106 @@ class RelicScorerViewModel(
     }
 
     fun selectChar(c: Character) {
-        val mainStat = recommendMainStats(c.role)
-        val weights = subStatWeights(c.role)
-        val best = pickBestSet(c, _state.value.allRelicSets)
+        val mainStat = relicOptimizer.recommendMainStats(c.role)
+        val weights = relicOptimizer.subStatWeights(c.role)
+        val best = _state.value.allRelicSets.firstOrNull { c.role in it.suitableFor }
+            ?: _state.value.allRelicSets.firstOrNull()
         _state.value = _state.value.copy(
             selectedChar = c,
-            mainStatRec = mainStat,
+            mainStatRec = MainStatRecommendation.from(mainStat),
             subStatWeights = weights,
             bestSet = best,
-            subStatScore = scoreSubStats(_state.value.inputSubStats, weights)
+            subStatScore = relicOptimizer.scoreSubStats(_state.value.inputSubStats, c.role),
+            recommendations = emptyList(),
+            applyMessage = null
         )
     }
 
     fun updateSubStats(subs: List<SubStat>) {
-        val weights = _state.value.subStatWeights
+        val c = _state.value.selectedChar
         _state.value = _state.value.copy(
             inputSubStats = subs,
-            subStatScore = scoreSubStats(subs, weights)
+            subStatScore = if (c != null) relicOptimizer.scoreSubStats(subs, c.role) else 0.0
         )
     }
 
-    /** 主词条推荐（按角色定位）。 */
-    private fun recommendMainStats(role: Role): MainStatRecommendation = when (role) {
-        Role.DPS, Role.SUB_DPS -> MainStatRecommendation(
-            body = StatType.CRIT_DMG,
-            boots = StatType.SPD,
-            sphere = StatType.ATK,
-            rope = StatType.ATK
-        )
-        Role.SUPPORT, Role.HEALER, Role.SHIELD -> MainStatRecommendation(
-            body = StatType.HP,
-            boots = StatType.SPD,
-            sphere = StatType.HP,
-            rope = StatType.HP
-        )
+    fun optimize() {
+        val c = _state.value.selectedChar ?: return
+        val sets = _state.value.allRelicSets
+        if (sets.isEmpty()) return
+        _state.value = _state.value.copy(isOptimizing = true, applyMessage = null)
+        viewModelScope.launch {
+            val enemy = Enemy(
+                id = "relic_opt",
+                name = "Relic Dummy",
+                count = 1,
+                weaknesses = setOf(c.element),
+                type = EnemyType.BOSS,
+                hp = 200_000.0,
+                toughness = 240.0
+            )
+            val cone = repository.observeAllLightCones().first()
+                .firstOrNull { it.path == c.path }
+            val recs = withContext(Dispatchers.Default) {
+                relicOptimizer.optimize(
+                    RelicOptimizer.Request(
+                        character = c,
+                        relicSets = sets,
+                        enemy = enemy,
+                        lightCone = cone,
+                        topN = 5
+                    )
+                )
+            }
+            val top = recs.firstOrNull()
+            _state.value = _state.value.copy(
+                isOptimizing = false,
+                recommendations = recs,
+                bestSet = top?.let { r -> sets.firstOrNull { it.id == r.relicBuild.set4 } }
+                    ?: _state.value.bestSet,
+                mainStatRec = top?.let { MainStatRecommendation.from(it.relicBuild.mainStats) }
+                    ?: _state.value.mainStatRec
+            )
+        }
     }
 
-    /** 副词条权重（按角色定位）。DPS 偏好暴击/暴伤/速度/攻击。 */
-    private fun subStatWeights(role: Role): Map<StatType, Double> = when (role) {
-        Role.DPS, Role.SUB_DPS -> mapOf(
-            StatType.CRIT_DMG to 1.0,
-            StatType.CRIT_RATE to 1.0,
-            StatType.SPD to 0.8,
-            StatType.ATK to 0.5,
-            StatType.HP to 0.1,
-            StatType.DEF to 0.1,
-            StatType.EHR to 0.3,
-            StatType.BRK_EFF to 0.4
-        )
-        Role.SUPPORT -> mapOf(
-            StatType.SPD to 1.0,
-            StatType.HP to 0.7,
-            StatType.EHR to 0.6,
-            StatType.BRK_EFF to 0.5,
-            StatType.CRIT_RATE to 0.2,
-            StatType.CRIT_DMG to 0.2
-        )
-        Role.HEALER, Role.SHIELD -> mapOf(
-            StatType.SPD to 1.0,
-            StatType.HP to 1.0,
-            StatType.DEF to 0.7,
-            StatType.EHR to 0.3
-        )
-    }
-
-    /** 副词条评分：每条 sub 值 × weight 求和 / max → 0..100。 */
-    private fun scoreSubStats(
-        subs: List<SubStat>,
-        weights: Map<StatType, Double>
-    ): Double {
-        if (subs.isEmpty() || weights.isEmpty()) return 0.0
-        val maxWeight = weights.values.max()
-        val raw = subs.sumOf { (weights[it.type] ?: 0.0) * it.value }
-        val max = (subs.size * maxWeight * 10.0).coerceAtLeast(1.0)
-        return (raw / max * 100.0).coerceIn(0.0, 100.0)
-    }
-
-    private fun pickBestSet(c: Character, sets: List<RelicSet>): RelicSet? {
-        return sets.firstOrNull { c.role in it.suitableFor }
-            ?: sets.firstOrNull()
+    fun applyRecommendation(rec: RelicOptimizer.Recommendation) {
+        val c = _state.value.selectedChar ?: return
+        viewModelScope.launch {
+            val cone = repository.observeAllLightCones().first()
+                .firstOrNull { it.path == c.path }
+            val build = PlayerBuild(
+                characterId = c.id,
+                lightConeId = cone?.id.orEmpty(),
+                relicSet4 = rec.relicBuild.set4,
+                relicSet2 = rec.relicBuild.set2,
+                mainStats = rec.relicBuild.mainStats,
+                subStats = emptyList(),
+                notes = "自动遗器: ${rec.notes}"
+            )
+            repository.upsertPlayerBuild(build)
+            _state.value = _state.value.copy(
+                applyMessage = "已写入 ${c.name} 的玩家面板",
+                bestSet = _state.value.allRelicSets.firstOrNull { it.id == rec.relicBuild.set4 },
+                mainStatRec = MainStatRecommendation.from(rec.relicBuild.mainStats)
+            )
+        }
     }
 
     companion object {
         fun factory(repo: CharacterRepository) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                RelicScorerViewModel(repo) as T
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val optimizer = RelicOptimizer(DamageCalculator(FormulaTables()))
+                return RelicScorerViewModel(repo, optimizer) as T
+            }
         }
+
+        fun factory(repo: CharacterRepository, optimizer: RelicOptimizer) =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T =
+                    RelicScorerViewModel(repo, optimizer) as T
+            }
     }
 }
